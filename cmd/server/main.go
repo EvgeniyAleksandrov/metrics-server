@@ -6,8 +6,8 @@ import (
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/metric/update"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/metric/update/method"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
+	method2 "github.com/EvgeniyAleksandrov/metrics-server/internal/service/update/method"
 )
 
 func main() {
@@ -25,8 +25,8 @@ func run() error {
 		"/update/{method}/{name}/{value}",
 		handler.NewUpdate(
 			update.NewProcessor(
-				method.NewGauge(memStorage),
-				method.NewCounter(memStorage),
+				method2.NewGauge(memStorage),
+				method2.NewCounter(memStorage),
 			),
 		),
 	)

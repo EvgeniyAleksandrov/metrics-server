@@ -20,3 +20,9 @@ run-server:
 
 test:
 	go test ./...
+
+generate: mockgen
+	go generate ./...
+
+mockgen:
+	@where.exe mockgen >nul 2>&1 || go install go.uber.org/mock/mockgen@latest

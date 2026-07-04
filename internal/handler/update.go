@@ -1,3 +1,4 @@
+//go:generate mockgen -source=update.go -destination=update_mock_test.go -package=handler_test
 package handler
 
 import (
@@ -5,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/metric"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
 )
 
 type MetricProcessor interface {
@@ -37,10 +38,10 @@ func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	if err := u.metricProcessor.Update(method, name, value); err != nil {
 		switch {
-		case errors.Is(err, metric.ErrUnsupportedProcessMethod):
+		case errors.Is(err, update.ErrUnsupportedProcessMethod):
 			http.Error(resp, "Unsupported method", http.StatusBadRequest)
 
-		case errors.Is(err, metric.ErrInvalidValueFormat):
+		case errors.Is(err, update.ErrInvalidValueFormat):
 			http.Error(resp, "Invalid value format", http.StatusBadRequest)
 
 		default:
@@ -56,7 +57,7 @@ func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 }
 
-func (c *Update) writeHeaders(w http.ResponseWriter) {
+func (u *Update) writeHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("charset", "utf-8")
 }
