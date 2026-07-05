@@ -6,11 +6,13 @@ import (
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
-	method2 "github.com/EvgeniyAleksandrov/metrics-server/internal/service/update/method"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/method"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+	log.Println("Start Server")
 	if err := run(); err != nil {
 		log.Fatalf("server run: %s", err.Error())
 	}
@@ -19,17 +21,13 @@ func main() {
 func run() error {
 	memStorage := repository.NewMemStorage()
 
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	mux.Handle(
-		"/update/{method}/{name}/{value}",
-		handler.NewUpdate(
-			update.NewProcessor(
-				method2.NewGauge(memStorage),
-				method2.NewCounter(memStorage),
-			),
-		),
-	)
+	processor := service.NewProcessor(method.NewGauge(memStorage), method.NewCounter(memStorage))
 
-	return http.ListenAndServe("localhost:8080", mux)
+	router.Get("/", handler.NewRoot(processor).ServeHTTP)
+	router.Get("/value/{method}/{name}", handler.NewGetValue(processor).ServeHTTP)
+	router.Post("/update/{method}/{name}/{value}", handler.NewUpdate(processor).ServeHTTP)
+
+	return http.ListenAndServe("localhost:8080", router)
 }

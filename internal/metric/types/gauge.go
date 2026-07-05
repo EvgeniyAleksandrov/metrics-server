@@ -19,7 +19,7 @@ func GaugeFromString(s string) (Gauge, error) {
 }
 
 func (g Gauge) String() string {
-	return fmt.Sprintf("%f", g)
+	return strconv.FormatFloat(float64(g), 'f', -1, 64)
 }
 
 func (g Gauge) Type() metric.ValueType {

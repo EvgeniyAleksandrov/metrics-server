@@ -12,6 +12,7 @@ package method_test
 import (
 	reflect "reflect"
 
+	types "github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,8 +40,23 @@ func (m *MockGaugeStorage) EXPECT() *MockGaugeStorageMockRecorder {
 	return m.recorder
 }
 
+// GaugeGet mocks base method.
+func (m *MockGaugeStorage) GaugeGet(name string) (types.Gauge, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GaugeGet", name)
+	ret0, _ := ret[0].(types.Gauge)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GaugeGet indicates an expected call of GaugeGet.
+func (mr *MockGaugeStorageMockRecorder) GaugeGet(name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GaugeGet", reflect.TypeOf((*MockGaugeStorage)(nil).GaugeGet), name)
+}
+
 // GaugeSet mocks base method.
-func (m *MockGaugeStorage) GaugeSet(name string, value float64) error {
+func (m *MockGaugeStorage) GaugeSet(name string, value types.Gauge) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GaugeSet", name, value)
 	ret0, _ := ret[0].(error)
@@ -51,4 +67,19 @@ func (m *MockGaugeStorage) GaugeSet(name string, value float64) error {
 func (mr *MockGaugeStorageMockRecorder) GaugeSet(name, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GaugeSet", reflect.TypeOf((*MockGaugeStorage)(nil).GaugeSet), name, value)
+}
+
+// GetAllGaugeValues mocks base method.
+func (m *MockGaugeStorage) GetAllGaugeValues() (map[string]types.Gauge, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllGaugeValues")
+	ret0, _ := ret[0].(map[string]types.Gauge)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllGaugeValues indicates an expected call of GetAllGaugeValues.
+func (mr *MockGaugeStorageMockRecorder) GetAllGaugeValues() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllGaugeValues", reflect.TypeOf((*MockGaugeStorage)(nil).GetAllGaugeValues))
 }

@@ -10,13 +10,13 @@ var ErrNotFoundElement = errors.New("not found element")
 
 type MemStorage struct {
 	gauge    map[string]types.Gauge
-	counters map[string][]types.Counter
+	counters map[string]types.Counter
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
 		gauge:    make(map[string]types.Gauge),
-		counters: make(map[string][]types.Counter),
+		counters: make(map[string]types.Counter),
 	}
 }
 
@@ -27,15 +27,15 @@ func (s *MemStorage) GaugeSet(name string, value types.Gauge) error {
 
 func (s *MemStorage) CounterAdd(name string, value types.Counter) error {
 	if _, ok := s.counters[name]; !ok {
-		s.counters[name] = make([]types.Counter, 0)
+		s.counters[name] = 0
 	}
 
-	s.counters[name] = append(s.counters[name], value)
+	s.counters[name] += value
 
 	return nil
 }
 
-func (s *MemStorage) GetGaugeByName(name string) (types.Gauge, error) {
+func (s *MemStorage) GaugeGet(name string) (types.Gauge, error) {
 	if value, ok := s.gauge[name]; ok {
 		return value, nil
 	}
@@ -43,10 +43,18 @@ func (s *MemStorage) GetGaugeByName(name string) (types.Gauge, error) {
 	return 0, ErrNotFoundElement
 }
 
-func (s *MemStorage) GetCounterByName(name string) ([]types.Counter, error) {
+func (s *MemStorage) CounterGet(name string) (types.Counter, error) {
 	if values, ok := s.counters[name]; ok {
 		return values, nil
 	}
 
-	return nil, ErrNotFoundElement
+	return 0, ErrNotFoundElement
+}
+
+func (s *MemStorage) GetAllGaugeValues() (map[string]types.Gauge, error) {
+	return s.gauge, nil
+}
+
+func (s *MemStorage) GetAllCounterValues() (map[string]types.Counter, error) {
+	return s.counters, nil
 }

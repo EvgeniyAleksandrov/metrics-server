@@ -18,6 +18,9 @@ bin:
 run-server:
 	go run .\cmd\server\main.go
 
+run-agent:
+	go run .\cmd\agent\main.go
+
 test:
 	go test ./...
 

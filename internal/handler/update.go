@@ -6,18 +6,18 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 )
 
-type MetricProcessor interface {
+type UpdateMetricProcessor interface {
 	Update(method string, name string, value string) error
 }
 
 type Update struct {
-	metricProcessor MetricProcessor
+	metricProcessor UpdateMetricProcessor
 }
 
-func NewUpdate(metricProcessor MetricProcessor) *Update {
+func NewUpdate(metricProcessor UpdateMetricProcessor) *Update {
 	return &Update{
 		metricProcessor: metricProcessor,
 	}
@@ -34,14 +34,15 @@ func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	if method == "" || name == "" || value == "" {
 		http.Error(resp, "Not Found", http.StatusNotFound)
+		return
 	}
 
 	if err := u.metricProcessor.Update(method, name, value); err != nil {
 		switch {
-		case errors.Is(err, update.ErrUnsupportedProcessMethod):
+		case errors.Is(err, service.ErrUnsupportedProcessMethod):
 			http.Error(resp, "Unsupported method", http.StatusBadRequest)
 
-		case errors.Is(err, update.ErrInvalidValueFormat):
+		case errors.Is(err, service.ErrInvalidValueFormat):
 			http.Error(resp, "Invalid value format", http.StatusBadRequest)
 
 		default:

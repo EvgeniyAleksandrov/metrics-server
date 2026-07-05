@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -33,7 +33,7 @@ func TestUpdate_ServeHTTP(t *testing.T) {
 			pathMethod:     "unknown",
 			pathName:       "Alloc",
 			pathValue:      "10",
-			updateErr:      update.ErrUnsupportedProcessMethod,
+			updateErr:      service.ErrUnsupportedProcessMethod,
 			expectedStatus: http.StatusBadRequest,
 		},
 		"invalid value": {
@@ -41,7 +41,7 @@ func TestUpdate_ServeHTTP(t *testing.T) {
 			pathMethod:     "gauge",
 			pathName:       "Alloc",
 			pathValue:      "abc",
-			updateErr:      update.ErrInvalidValueFormat,
+			updateErr:      service.ErrInvalidValueFormat,
 			expectedStatus: http.StatusBadRequest,
 		},
 		"internal error": {
@@ -61,7 +61,7 @@ func TestUpdate_ServeHTTP(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			mockProcessor := NewMockMetricProcessor(ctrl)
+			mockProcessor := NewMockUpdateMetricProcessor(ctrl)
 			mockProcessor.EXPECT().Update(tt.pathMethod, tt.pathName, tt.pathValue).Return(tt.updateErr).AnyTimes()
 
 			req := httptest.NewRequest(tt.httpMethod, "/", nil)

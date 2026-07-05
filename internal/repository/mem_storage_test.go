@@ -20,9 +20,9 @@ func TestMemStorage_CounterAddAnyElementsWithOneName_GetThisElementsAsSlice(t *t
 	err = sut.CounterAdd("A", 3)
 	require.NoError(t, err)
 
-	values, err := sut.GetCounterByName("A")
+	values, err := sut.CounterGet("A")
 	require.NoError(t, err)
-	require.Equal(t, []types.Counter{1, 2, 3}, values)
+	require.Equal(t, types.Counter(6), values)
 }
 
 func TestMemStorage_CounterAddAnyElementsWithIdenticalName_GetAllCountersByName(t *testing.T) {
@@ -37,13 +37,13 @@ func TestMemStorage_CounterAddAnyElementsWithIdenticalName_GetAllCountersByName(
 	err = sut.CounterAdd("B", 3)
 	require.NoError(t, err)
 
-	values, err := sut.GetCounterByName("A")
+	values, err := sut.CounterGet("A")
 	require.NoError(t, err)
-	require.Equal(t, []types.Counter{1, 2}, values)
+	require.Equal(t, types.Counter(3), values)
 
-	values, err = sut.GetCounterByName("B")
+	values, err = sut.CounterGet("B")
 	require.NoError(t, err)
-	require.Equal(t, []types.Counter{3}, values)
+	require.Equal(t, types.Counter(3), values)
 }
 
 func TestMemStorage_CounterGetUnavailableElement_ElementNotFoundError(t *testing.T) {
@@ -55,7 +55,7 @@ func TestMemStorage_CounterGetUnavailableElement_ElementNotFoundError(t *testing
 	err = sut.CounterAdd("A", 2)
 	require.NoError(t, err)
 
-	values, err := sut.GetCounterByName("B")
+	values, err := sut.CounterGet("B")
 	require.ErrorIs(t, err, repository.ErrNotFoundElement)
 	require.Empty(t, values)
 }
@@ -66,14 +66,14 @@ func TestMemStorage_GaugeAddAnyElementsWithOneName_ElementWasUpdated(t *testing.
 	err := sut.GaugeSet("A", 1.2)
 	require.NoError(t, err)
 
-	value, err := sut.GetGaugeByName("A")
+	value, err := sut.GaugeGet("A")
 	require.NoError(t, err)
 	require.Equal(t, types.Gauge(1.2), value)
 
 	err = sut.GaugeSet("A", 1.5)
 	require.NoError(t, err)
 
-	value, err = sut.GetGaugeByName("A")
+	value, err = sut.GaugeGet("A")
 	require.NoError(t, err)
 	require.Equal(t, types.Gauge(1.5), value)
 }
@@ -84,7 +84,7 @@ func TestMemStorage_AddGaugeElementGetCounterElementWithSameName_ElementWasNotFo
 	err := sut.GaugeSet("A", 1.2)
 	require.NoError(t, err)
 
-	value, err := sut.GetCounterByName("A")
+	value, err := sut.CounterGet("A")
 	require.ErrorIs(t, err, repository.ErrNotFoundElement)
 	require.Empty(t, value)
 }
@@ -95,7 +95,7 @@ func TestMemStorage_AddCounterElementGetGaugeElementWithSameName_ElementWasNotFo
 	err := sut.CounterAdd("A", 1)
 	require.NoError(t, err)
 
-	value, err := sut.GetGaugeByName("A")
+	value, err := sut.GaugeGet("A")
 	require.ErrorIs(t, err, repository.ErrNotFoundElement)
 	require.Empty(t, value)
 }

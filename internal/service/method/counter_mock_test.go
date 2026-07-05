@@ -12,6 +12,7 @@ package method_test
 import (
 	reflect "reflect"
 
+	types "github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,7 +41,7 @@ func (m *MockCounterStorage) EXPECT() *MockCounterStorageMockRecorder {
 }
 
 // CounterAdd mocks base method.
-func (m *MockCounterStorage) CounterAdd(name string, value int64) error {
+func (m *MockCounterStorage) CounterAdd(name string, value types.Counter) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CounterAdd", name, value)
 	ret0, _ := ret[0].(error)
@@ -51,4 +52,34 @@ func (m *MockCounterStorage) CounterAdd(name string, value int64) error {
 func (mr *MockCounterStorageMockRecorder) CounterAdd(name, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CounterAdd", reflect.TypeOf((*MockCounterStorage)(nil).CounterAdd), name, value)
+}
+
+// CounterGet mocks base method.
+func (m *MockCounterStorage) CounterGet(name string) (types.Counter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CounterGet", name)
+	ret0, _ := ret[0].(types.Counter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CounterGet indicates an expected call of CounterGet.
+func (mr *MockCounterStorageMockRecorder) CounterGet(name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CounterGet", reflect.TypeOf((*MockCounterStorage)(nil).CounterGet), name)
+}
+
+// GetAllCounterValues mocks base method.
+func (m *MockCounterStorage) GetAllCounterValues() (map[string]types.Counter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllCounterValues")
+	ret0, _ := ret[0].(map[string]types.Counter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllCounterValues indicates an expected call of GetAllCounterValues.
+func (mr *MockCounterStorageMockRecorder) GetAllCounterValues() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllCounterValues", reflect.TypeOf((*MockCounterStorage)(nil).GetAllCounterValues))
 }

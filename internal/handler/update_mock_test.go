@@ -15,32 +15,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockMetricProcessor is a mock of MetricProcessor interface.
-type MockMetricProcessor struct {
+// MockUpdateMetricProcessor is a mock of UpdateMetricProcessor interface.
+type MockUpdateMetricProcessor struct {
 	ctrl     *gomock.Controller
-	recorder *MockMetricProcessorMockRecorder
+	recorder *MockUpdateMetricProcessorMockRecorder
 	isgomock struct{}
 }
 
-// MockMetricProcessorMockRecorder is the mock recorder for MockMetricProcessor.
-type MockMetricProcessorMockRecorder struct {
-	mock *MockMetricProcessor
+// MockUpdateMetricProcessorMockRecorder is the mock recorder for MockUpdateMetricProcessor.
+type MockUpdateMetricProcessorMockRecorder struct {
+	mock *MockUpdateMetricProcessor
 }
 
-// NewMockMetricProcessor creates a new mock instance.
-func NewMockMetricProcessor(ctrl *gomock.Controller) *MockMetricProcessor {
-	mock := &MockMetricProcessor{ctrl: ctrl}
-	mock.recorder = &MockMetricProcessorMockRecorder{mock}
+// NewMockUpdateMetricProcessor creates a new mock instance.
+func NewMockUpdateMetricProcessor(ctrl *gomock.Controller) *MockUpdateMetricProcessor {
+	mock := &MockUpdateMetricProcessor{ctrl: ctrl}
+	mock.recorder = &MockUpdateMetricProcessorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockMetricProcessor) EXPECT() *MockMetricProcessorMockRecorder {
+func (m *MockUpdateMetricProcessor) EXPECT() *MockUpdateMetricProcessorMockRecorder {
 	return m.recorder
 }
 
 // Update mocks base method.
-func (m *MockMetricProcessor) Update(method, name, value string) error {
+func (m *MockUpdateMetricProcessor) Update(method, name, value string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", method, name, value)
 	ret0, _ := ret[0].(error)
@@ -48,7 +48,7 @@ func (m *MockMetricProcessor) Update(method, name, value string) error {
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockMetricProcessorMockRecorder) Update(method, name, value any) *gomock.Call {
+func (mr *MockUpdateMetricProcessorMockRecorder) Update(method, name, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockMetricProcessor)(nil).Update), method, name, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), method, name, value)
 }

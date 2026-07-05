@@ -1,11 +1,11 @@
-package update_test
+package service_test
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/update"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -22,7 +22,7 @@ func TestNewProcessor_CreateNewProcessorWithAnyDifferentMethods_NoPanic(t *testi
 	mockMethod2.EXPECT().GetType().Return(metric.Gauge).Times(1)
 
 	require.NotPanics(t, func() {
-		_ = update.NewProcessor(mockMethod1, mockMethod2)
+		_ = service.NewProcessor(mockMethod1, mockMethod2)
 	})
 }
 
@@ -36,7 +36,7 @@ func TestNewProcessor_CreateNewProcessorWithAnyIdenticalMethods_Panic(t *testing
 	mockMethod2.EXPECT().GetType().Return(metric.Gauge).Times(1)
 
 	require.Panics(t, func() {
-		_ = update.NewProcessor(mockMethod1, mockMethod2)
+		_ = service.NewProcessor(mockMethod1, mockMethod2)
 	})
 }
 
@@ -47,7 +47,7 @@ func TestProcessor_UpdateSupportedMetricData_NoErrorUpdate(t *testing.T) {
 	mockMethod1.EXPECT().GetType().Return(metric.Gauge).Times(1)
 	mockMethod1.EXPECT().Update("A", "12.5").Return(nil).Times(1)
 
-	sut := update.NewProcessor(mockMethod1)
+	sut := service.NewProcessor(mockMethod1)
 
 	err := sut.Update("gauge", "A", "12.5")
 	require.NoError(t, err)
@@ -59,10 +59,10 @@ func TestProcessor_UpdateNotSupportedMetricData_NoErrorUpdate(t *testing.T) {
 	mockMethod1 := NewMockMethod(ctrl)
 	mockMethod1.EXPECT().GetType().Return(metric.Gauge).Times(1)
 
-	sut := update.NewProcessor(mockMethod1)
+	sut := service.NewProcessor(mockMethod1)
 
 	err := sut.Update("not_supported", "A", "12.5")
-	require.ErrorIs(t, err, update.ErrUnsupportedProcessMethod)
+	require.ErrorIs(t, err, service.ErrUnsupportedProcessMethod)
 }
 
 func TestProcessor_UpdateDataWithError_ErrorUpdate(t *testing.T) {
@@ -72,7 +72,7 @@ func TestProcessor_UpdateDataWithError_ErrorUpdate(t *testing.T) {
 	mockMethod1.EXPECT().GetType().Return(metric.Gauge).Times(1)
 	mockMethod1.EXPECT().Update("A", "12.5").Return(ErrTest).Times(1)
 
-	sut := update.NewProcessor(mockMethod1)
+	sut := service.NewProcessor(mockMethod1)
 
 	err := sut.Update("gauge", "A", "12.5")
 	require.ErrorIs(t, err, ErrTest)

@@ -15,7 +15,10 @@ func (c *PullCounter) Type() Type {
 }
 
 func (c *PullCounter) Get() any {
-	return c.pull
+	value := c.pull
+	c.pull = 0
+	
+	return value
 }
 
 func (c *PullCounter) Update() error {
