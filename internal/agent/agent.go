@@ -1,18 +1,12 @@
 package agent
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
-)
-
-var (
-	updateDelay  = time.Second * 2
-	publishDelay = time.Second * 10
-	waitDelay    = time.Second * 1
 )
 
 type ResourceManager interface {
@@ -32,9 +26,11 @@ type Agent struct {
 	resourceManager ResourceManager
 	metricGetters   []MetricGetter
 	metricPublisher MetricPublisher
-	stop            bool
 
 	serverURL string
+
+	pullInterval   time.Duration
+	reportInterval time.Duration
 }
 
 func NewAgent(
@@ -42,6 +38,8 @@ func NewAgent(
 	metricGetters []MetricGetter,
 	metricPublisher MetricPublisher,
 	serverURL string,
+	pullInterval time.Duration,
+	reportInterval time.Duration,
 ) *Agent {
 	for _, mGetter := range metricGetters {
 		resType := mGetter.Resource()
@@ -57,21 +55,23 @@ func NewAgent(
 		metricGetters:   metricGetters,
 		metricPublisher: metricPublisher,
 		serverURL:       serverURL,
+		pullInterval:    pullInterval,
+		reportInterval:  reportInterval,
 	}
 }
 
-func (a *Agent) Run() error {
-	log.Println("Start agent.")
+func (a *Agent) Run(ctx context.Context) {
+	pullTicker := time.NewTicker(a.pullInterval)
+	defer pullTicker.Stop()
 
-	updateTicker := time.NewTicker(updateDelay)
-	defer updateTicker.Stop()
-
-	publishDelayTicker := time.NewTicker(publishDelay)
+	publishDelayTicker := time.NewTicker(a.reportInterval)
 	defer publishDelayTicker.Stop()
 
-	for !a.stop {
+	for {
 		select {
-		case <-updateTicker.C:
+		case <-ctx.Done():
+			return
+		case <-pullTicker.C:
 			if err := a.resourceManager.Update(); err != nil {
 				log.Printf("Update metrics error: %s", err.Error())
 			}
@@ -87,7 +87,8 @@ func (a *Agent) Run() error {
 
 				metrics, err := mGetter.GetAll(res)
 				if err != nil {
-					return fmt.Errorf("get metrics %s: %w", mGetter.Resource(), err)
+					log.Printf("Get metrics error: %s", err.Error())
+					continue
 				}
 
 				allMetrics = append(allMetrics, metrics...)
@@ -100,8 +101,4 @@ func (a *Agent) Run() error {
 			}
 		}
 	}
-
-	log.Println("Stop agent.")
-
-	return nil
 }

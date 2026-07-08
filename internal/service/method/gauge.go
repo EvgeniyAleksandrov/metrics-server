@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	metric2 "github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 )
@@ -56,7 +56,7 @@ func (g *Gauge) GetAll() (map[string]string, error) {
 	}
 
 	values := make(map[string]string, len(gaugeValues))
-	
+
 	for name, value := range gaugeValues {
 		values[name] = value.String()
 	}
@@ -64,6 +64,6 @@ func (g *Gauge) GetAll() (map[string]string, error) {
 	return values, nil
 }
 
-func (g *Gauge) GetType() metric2.ValueType {
-	return metric2.Gauge
+func (g *Gauge) GetType() metric.ValueType {
+	return metric.Gauge
 }

@@ -26,6 +26,7 @@ func NewUpdate(metricProcessor UpdateMetricProcessor) *Update {
 func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		http.Error(resp, "unsupported method", http.StatusMethodNotAllowed)
+		return
 	}
 
 	method := req.PathValue("method")

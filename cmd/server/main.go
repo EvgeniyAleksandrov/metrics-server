@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -12,13 +13,25 @@ import (
 )
 
 func main() {
-	log.Println("Start Server")
-	if err := run(); err != nil {
+	var addr string
+
+	flag.StringVar(
+		&addr,
+		"a",
+		"localhost:8080",
+		"The address and port on which the server listens for connections.",
+	)
+
+	flag.Parse()
+
+	log.Printf("Start server on: %s", addr)
+
+	if err := run(addr); err != nil {
 		log.Fatalf("server run: %s", err.Error())
 	}
 }
 
-func run() error {
+func run(addr string) error {
 	memStorage := repository.NewMemStorage()
 
 	router := chi.NewRouter()
@@ -29,5 +42,5 @@ func run() error {
 	router.Get("/value/{method}/{name}", handler.NewGetValue(processor).ServeHTTP)
 	router.Post("/update/{method}/{name}/{value}", handler.NewUpdate(processor).ServeHTTP)
 
-	return http.ListenAndServe("localhost:8080", router)
+	return http.ListenAndServe(addr, router)
 }
