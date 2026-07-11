@@ -5,18 +5,20 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/method"
+	"github.com/caarlos0/env"
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-	var addr string
+	serverConfig := config.Server{}
 
 	flag.StringVar(
-		&addr,
+		&serverConfig.Address,
 		"a",
 		"localhost:8080",
 		"The address and port on which the server listens for connections.",
@@ -24,9 +26,13 @@ func main() {
 
 	flag.Parse()
 
-	log.Printf("Start server on: %s", addr)
+	if err := env.Parse(&serverConfig); err != nil {
+		log.Fatalf("Parse config error: %s", err.Error())
+	}
 
-	if err := run(addr); err != nil {
+	log.Printf("Start server on: %s", serverConfig.Address)
+
+	if err := run(serverConfig.Address); err != nil {
 		log.Fatalf("server run: %s", err.Error())
 	}
 }
