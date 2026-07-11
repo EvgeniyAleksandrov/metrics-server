@@ -1,0 +1,31 @@
+build-server:
+	go build -o .\bin\server.exe .\cmd\server\main.go
+
+build-agent:
+	go build -o .\bin\agent.exe .\cmd\agent\main.go
+
+start-autotest: metrictest build-server
+	.\bin\metricstest -test.v -test.run=^TestIteration1$ -binary-path=.\bin\server.exe
+
+
+metrictest: bin
+	curl -L -o ./bin/metricstest.exe https://github.com/Yandex-Practicum/go-autotests/releases/download/v0.13.4/metricstest-windows-amd64.exe
+
+bin:
+	rd /s /q .\bin
+	mkdir .\bin
+
+run-server:
+	go run .\cmd\server\main.go
+
+run-agent:
+	go run .\cmd\agent\main.go
+
+test:
+	go test ./...
+
+generate: mockgen
+	go generate ./...
+
+mockgen:
+	@where.exe mockgen >nul 2>&1 || go install go.uber.org/mock/mockgen@latest
