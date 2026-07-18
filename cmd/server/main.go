@@ -2,19 +2,26 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/middlware"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/method"
 	"github.com/caarlos0/env"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
 	serverConfig := config.Server{}
 
 	flag.StringVar(
@@ -27,26 +34,38 @@ func main() {
 	flag.Parse()
 
 	if err := env.Parse(&serverConfig); err != nil {
-		log.Fatalf("Parse config error: %s", err.Error())
+		logger.Fatal("Parse config error.", zap.Error(err))
 	}
 
-	log.Printf("Start server on: %s", serverConfig.Address)
+	logger.Info("Start server. ", zap.String("address", serverConfig.Address))
 
-	if err := run(serverConfig.Address); err != nil {
-		log.Fatalf("server run: %s", err.Error())
+	if err := run(serverConfig.Address, logger); err != nil {
+		logger.Sugar().Fatalf("server run: %s", err.Error())
 	}
 }
 
-func run(addr string) error {
+func run(addr string, logger *zap.Logger) error {
 	memStorage := repository.NewMemStorage()
 
 	router := chi.NewRouter()
 
-	processor := service.NewProcessor(method.NewGauge(memStorage), method.NewCounter(memStorage))
+	processor := service.NewProcessor(method.NewGauge(memStorage, logger), method.NewCounter(memStorage, logger))
 
-	router.Get("/", handler.NewRoot(processor).ServeHTTP)
-	router.Get("/value/{method}/{name}", handler.NewGetValue(processor).ServeHTTP)
-	router.Post("/update/{method}/{name}/{value}", handler.NewUpdate(processor).ServeHTTP)
+	router.Get("/", middlware.WithLogging(handler.NewRoot(processor).ServeHTTP, logger))
+	router.Get(
+		"/value/{method}/{name}",
+		middlware.WithLogging(
+			handler.NewGetValue(processor).ServeHTTP,
+			logger,
+		),
+	)
+	router.Post(
+		"/update/{method}/{name}/{value}",
+		middlware.WithLogging(
+			handler.NewUpdate(processor).ServeHTTP,
+			logger,
+		),
+	)
 
 	return http.ListenAndServe(addr, router)
 }

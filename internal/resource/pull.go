@@ -17,7 +17,7 @@ func (c *PullCounter) Type() Type {
 func (c *PullCounter) Get() any {
 	value := c.pull
 	c.pull = 0
-	
+
 	return value
 }
 

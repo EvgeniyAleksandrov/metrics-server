@@ -3,7 +3,6 @@ package handler
 import (
 	"embed"
 	"html/template"
-	"log"
 	"net/http"
 )
 
@@ -33,8 +32,9 @@ func (v *Root) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	res.WriteHeader(http.StatusOK)
+
 	if err := v.tmpl.Execute(res, data); err != nil {
-		log.Printf("Error: %s", err.Error())
 		http.Error(res, "Load data to template Error", http.StatusInternalServerError)
 		return
 	}

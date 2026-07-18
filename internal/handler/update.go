@@ -3,7 +3,6 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
@@ -53,41 +52,11 @@ func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("metirc name:%s, value: %s, method: %s processed\n", name, value, method)
 	u.writeHeaders(resp)
 	resp.WriteHeader(http.StatusOK)
-
 }
 
 func (u *Update) writeHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "plain/text")
 	w.Header().Set("charset", "utf-8")
 }
-
-// func (c *Update) POST(w http.ResponseWriter, r *http.Request) {
-// 	param, err := c.paramsGetter.Get(r)
-// 	if err != nil {
-// 		switch {
-// 		case errors.Is(err, metric.ErrEmptyName) || errors.Is(err, metric.ErrEmptyValue):
-// 			log.Printf("counter POST: %s", err.Error())
-// 			http.Error(w, "empty name", http.StatusNotFound)
-// 		default:
-// 			http.Error(w, "unexpected error", http.StatusBadRequest)
-// 		}
-// 	}
-
-// 	i, err := strconv.Atoi(param.Value)
-// 	if err != nil {
-// 		http.Error(w, "not correct value format", http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	value := int64(i)
-
-// 	// TODO: write param to data base
-
-// 	w.Write([]byte(fmt.Sprintf("name: %s, value: %d", param.Name, value)))
-// }
-
-// func (u *Update) parseParams(r *http.Request) (*updateParams, error) {
-// }

@@ -3,11 +3,11 @@ package method
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
+	"go.uber.org/zap"
 )
 
 type CounterStorage interface {
@@ -18,18 +18,20 @@ type CounterStorage interface {
 
 type Counter struct {
 	storage CounterStorage
+	logger  Logger
 }
 
-func NewCounter(storage CounterStorage) *Counter {
+func NewCounter(storage CounterStorage, logger Logger) *Counter {
 	return &Counter{
 		storage: storage,
+		logger:  logger,
 	}
 }
 
 func (c *Counter) Update(name, value string) error {
 	preparedValue, err := types.CounterFromString(value)
 	if err != nil {
-		log.Printf("Counter converter failed: %s", err.Error())
+		c.logger.Warn("Counter converter failed", zap.Error(err))
 		return service.ErrInvalidValueFormat
 	}
 

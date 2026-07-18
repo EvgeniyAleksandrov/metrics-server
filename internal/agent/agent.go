@@ -2,11 +2,11 @@ package agent
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
+	"go.uber.org/zap"
 )
 
 type ResourceManager interface {
@@ -22,6 +22,13 @@ type MetricGetter interface {
 type MetricPublisher interface {
 	Publish(server string, m *metric.Metric) error
 }
+
+type Logger interface {
+	Fatal(msg string, fields ...zap.Field)
+	Info(msg string, flags ...zap.Field)
+	Warn(msg string, flags ...zap.Field)
+}
+
 type Agent struct {
 	resourceManager ResourceManager
 	metricGetters   []MetricGetter
@@ -31,6 +38,8 @@ type Agent struct {
 
 	pullInterval   time.Duration
 	reportInterval time.Duration
+
+	logger Logger
 }
 
 func NewAgent(
@@ -40,14 +49,19 @@ func NewAgent(
 	serverURL string,
 	pullInterval time.Duration,
 	reportInterval time.Duration,
+	logger Logger,
 ) *Agent {
 	for _, mGetter := range metricGetters {
 		resType := mGetter.Resource()
 		if _, err := resourceManager.Get(resType); err != nil {
-			log.Fatalf("Resource types %s not found: %s", resType, err.Error())
+			logger.Fatal(
+				"Resource types not found",
+				zap.String("resourceType", string(resType)),
+				zap.Error(err),
+			)
 		}
 
-		log.Printf("resource added: %s", resType)
+		logger.Info("Resource added", zap.String("resourceType", string(resType)))
 	}
 
 	return &Agent{
@@ -73,7 +87,7 @@ func (a *Agent) Run(ctx context.Context) {
 			return
 		case <-pullTicker.C:
 			if err := a.resourceManager.Update(); err != nil {
-				log.Printf("Update metrics error: %s", err.Error())
+				a.logger.Warn("Update metrics error", zap.Error(err))
 			}
 		case <-publishDelayTicker.C:
 			allMetrics := make([]*metric.Metric, 0)
@@ -81,13 +95,13 @@ func (a *Agent) Run(ctx context.Context) {
 			for _, mGetter := range a.metricGetters {
 				res, err := a.resourceManager.Get(mGetter.Resource())
 				if err != nil {
-					log.Printf("Get resource error: %s", err.Error())
+					a.logger.Warn("Get resource error", zap.Error(err))
 					continue
 				}
 
 				metrics, err := mGetter.GetAll(res)
 				if err != nil {
-					log.Printf("Get metrics error: %s", err.Error())
+					a.logger.Warn("Get metric error", zap.Error(err))
 					continue
 				}
 
@@ -96,7 +110,11 @@ func (a *Agent) Run(ctx context.Context) {
 
 			for _, m := range allMetrics {
 				if err := a.metricPublisher.Publish(a.serverURL, m); err != nil {
-					log.Printf("Publish metrics %s error: %s", m.Name(), err.Error())
+					a.logger.Warn(
+						"Publish metrics error",
+						zap.String("metricName", string(m.Name())),
+						zap.Error(err),
+					)
 				}
 			}
 		}

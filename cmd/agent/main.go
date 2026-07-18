@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,9 +17,17 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/getter"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
 	"github.com/caarlos0/env"
+	"go.uber.org/zap"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(fmt.Sprintf("Can't create logger: %s", err.Error()))
+	}
+
+	defer logger.Sync()
+
 	agentConfig := config.Agent{}
 
 	flag.StringVar(&agentConfig.Address, "a", "localhost:8080", "Server's address and port.")
@@ -29,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	if err := env.Parse(&agentConfig); err != nil {
-		log.Fatalf("Parse config error: %s", err.Error())
+		logger.Fatal("Parse config error", zap.Error(err))
 	}
 
 	a := agent.NewAgent(
@@ -47,6 +55,7 @@ func main() {
 		agentConfig.Address,
 		time.Duration(agentConfig.PoolInterval)*time.Second,
 		time.Duration(agentConfig.ReportInterval)*time.Second,
+		logger,
 	)
 
 	stopContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGKILL)
@@ -55,8 +64,12 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	log.Println("Agent started.")
-	log.Printf("%+v", agentConfig)
+	logger.Info(
+		"Agent started",
+		zap.String("addr", agentConfig.Address),
+		zap.Int("pollInterval", agentConfig.PoolInterval),
+		zap.Int("reportInterval", agentConfig.ReportInterval),
+	)
 
 	go func() {
 		a.Run(stopContext)
@@ -65,5 +78,5 @@ func main() {
 
 	wg.Wait()
 
-	log.Println("Agent stoped.")
+	logger.Info("Agent finished")
 }

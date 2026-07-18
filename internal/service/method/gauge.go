@@ -3,11 +3,11 @@ package method
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
+	"go.uber.org/zap"
 )
 
 type GaugeStorage interface {
@@ -18,18 +18,20 @@ type GaugeStorage interface {
 
 type Gauge struct {
 	storage GaugeStorage
+	logger  Logger
 }
 
-func NewGauge(storage GaugeStorage) *Gauge {
+func NewGauge(storage GaugeStorage, logger Logger) *Gauge {
 	return &Gauge{
 		storage: storage,
+		logger:  logger,
 	}
 }
 
 func (g *Gauge) Update(name, value string) error {
 	preparedValue, err := types.GaugeFromString(value)
 	if err != nil {
-		log.Printf("Float64 converter failed: %s", err.Error())
+		g.logger.Warn("Gauge converter failed", zap.Error(err))
 		return service.ErrInvalidValueFormat
 	}
 
