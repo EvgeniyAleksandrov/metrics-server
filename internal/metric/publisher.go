@@ -2,8 +2,12 @@
 package metric
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
 var ErrNotPublished = fmt.Errorf("metrics not published")
@@ -12,13 +16,19 @@ type HTTPClient interface {
 	Do(req *http.Request) (resp *http.Response, err error)
 }
 
-type Publisher struct {
-	httpClient HTTPClient
+type Translator interface {
+	Translate(m *Metric) (*models.Metrics, error)
 }
 
-func NewPublisher(httpClient HTTPClient) *Publisher {
+type Publisher struct {
+	httpClient HTTPClient
+	translator Translator
+}
+
+func NewPublisher(httpClient HTTPClient, translator Translator) *Publisher {
 	return &Publisher{
 		httpClient: httpClient,
+		translator: translator,
 	}
 }
 
@@ -28,12 +38,16 @@ func (p *Publisher) Publish(server string, m *Metric) error {
 		return fmt.Errorf("build request: %w", err)
 	}
 
+	_ = req.Body.Close()
+
 	res, err := p.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("make request: %w", err)
 	}
 
-	defer res.Body.Close()
+	if res != nil || res.Body != nil {
+		defer res.Body.Close()
+	}
 
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("publishing err with status %s: %w", res.Status, ErrNotPublished)
@@ -43,16 +57,33 @@ func (p *Publisher) Publish(server string, m *Metric) error {
 }
 
 func (p *Publisher) buildUpdateRequest(server string, m *Metric) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodPost, p.buildURL(server, m), nil)
+	jsonData, err := p.buildJSON(m)
+	if err != nil {
+		return nil, fmt.Errorf("build json data: %w", err)
+	}
+
+	byteBuffer := bytes.NewBuffer(jsonData)
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/update/", server), byteBuffer)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 
 	return req, nil
 }
 
-func (p *Publisher) buildURL(server string, m *Metric) string {
-	return fmt.Sprintf("http://%s/update/%s/%s/%s", server, string(m.Type()), m.Name(), m.Value())
+func (p *Publisher) buildJSON(m *Metric) ([]byte, error) {
+	metrics, err := p.translator.Translate(m)
+	if err != nil {
+		return nil, fmt.Errorf("translate metric: %w", err)
+	}
+
+	jsonData, err := json.Marshal(metrics)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling metrics: %w", err)
+	}
+
+	return jsonData, nil
 }

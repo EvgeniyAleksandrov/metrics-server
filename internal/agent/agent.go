@@ -71,6 +71,7 @@ func NewAgent(
 		serverURL:       serverURL,
 		pullInterval:    pullInterval,
 		reportInterval:  reportInterval,
+		logger:          logger,
 	}
 }
 

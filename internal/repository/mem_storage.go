@@ -3,27 +3,25 @@ package repository
 import (
 	"errors"
 	"sync"
-
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 )
 
 var ErrNotFoundElement = errors.New("not found element")
 
 type MemStorage struct {
-	gauge    map[string]types.Gauge
-	counters map[string]types.Counter
+	gauge    map[string]float64
+	counters map[string]int64
 
 	mu sync.RWMutex
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		gauge:    make(map[string]types.Gauge),
-		counters: make(map[string]types.Counter),
+		gauge:    make(map[string]float64),
+		counters: make(map[string]int64),
 	}
 }
 
-func (s *MemStorage) GaugeSet(name string, value types.Gauge) error {
+func (s *MemStorage) SetGauge(name string, value float64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -31,12 +29,13 @@ func (s *MemStorage) GaugeSet(name string, value types.Gauge) error {
 	return nil
 }
 
-func (s *MemStorage) CounterAdd(name string, value types.Counter) error {
+func (s *MemStorage) AddCounter(name string, value int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.counters[name]; !ok {
-		s.counters[name] = 0
+		s.counters[name] = value
+		return nil
 	}
 
 	s.counters[name] += value
@@ -44,7 +43,7 @@ func (s *MemStorage) CounterAdd(name string, value types.Counter) error {
 	return nil
 }
 
-func (s *MemStorage) GaugeGet(name string) (types.Gauge, error) {
+func (s *MemStorage) GetGauge(name string) (float64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -55,7 +54,7 @@ func (s *MemStorage) GaugeGet(name string) (types.Gauge, error) {
 	return 0, ErrNotFoundElement
 }
 
-func (s *MemStorage) CounterGet(name string) (types.Counter, error) {
+func (s *MemStorage) GetCounter(name string) (int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -66,14 +65,14 @@ func (s *MemStorage) CounterGet(name string) (types.Counter, error) {
 	return 0, ErrNotFoundElement
 }
 
-func (s *MemStorage) GetAllGaugeValues() (map[string]types.Gauge, error) {
+func (s *MemStorage) GetAllGaugeValues() (map[string]float64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return s.gauge, nil
 }
 
-func (s *MemStorage) GetAllCounterValues() (map[string]types.Counter, error) {
+func (s *MemStorage) GetAllCounterValues() (map[string]int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

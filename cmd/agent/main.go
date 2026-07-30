@@ -15,6 +15,8 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/getter"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator/translation"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
 	"github.com/caarlos0/env"
 	"go.uber.org/zap"
@@ -43,7 +45,7 @@ func main() {
 	a := agent.NewAgent(
 		resource.NewManager(
 			resource.NewMemory(),
-			resource.NewPullCounter(),
+			resource.NewPollCounter(),
 			resource.NewRandom(),
 		),
 		[]agent.MetricGetter{
@@ -51,7 +53,7 @@ func main() {
 			getter.NewPullCounter(),
 			getter.NewMemory(),
 		},
-		metric.NewPublisher(&http.Client{}),
+		metric.NewPublisher(&http.Client{}, translator.NewMetric(translation.NewGauge(), translation.NewCounter())),
 		agentConfig.Address,
 		time.Duration(agentConfig.PoolInterval)*time.Second,
 		time.Duration(agentConfig.ReportInterval)*time.Second,

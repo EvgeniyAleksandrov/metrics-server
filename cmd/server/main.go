@@ -7,6 +7,10 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/middlware"
+	parserupdate "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/update"
+	parservalue "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/value"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/response/update"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/response/value"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/method"
@@ -14,6 +18,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
+
+const MaxRequestSize = 8 * 1024 * 1024
 
 func main() {
 	logger, err := zap.NewProduction()
@@ -52,17 +58,50 @@ func run(addr string, logger *zap.Logger) error {
 	processor := service.NewProcessor(method.NewGauge(memStorage, logger), method.NewCounter(memStorage, logger))
 
 	router.Get("/", middlware.WithLogging(handler.NewRoot(processor).ServeHTTP, logger))
-	router.Get(
-		"/value/{method}/{name}",
+
+	router.Post(
+		"/value/",
 		middlware.WithLogging(
-			handler.NewGetValue(processor).ServeHTTP,
+			handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter()).ServeHTTP,
 			logger,
 		),
 	)
 	router.Post(
+		"/value",
+		middlware.WithLogging(
+			handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter()).ServeHTTP,
+			logger,
+		),
+	)
+
+	router.Post(
+		"/update/",
+		middlware.WithLogging(
+			handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter()).ServeHTTP,
+			logger,
+		),
+	)
+
+	router.Post(
+		"/update",
+		middlware.WithLogging(
+			handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter()).ServeHTTP,
+			logger,
+		),
+	)
+
+	router.Post(
 		"/update/{method}/{name}/{value}",
 		middlware.WithLogging(
-			handler.NewUpdate(processor).ServeHTTP,
+			handler.NewUpdate(processor, parserupdate.NewPath(logger), update.NewValueWriter()).ServeHTTP,
+			logger,
+		),
+	)
+
+	router.Get(
+		"/value/{method}/{name}",
+		middlware.WithLogging(
+			handler.NewValue(processor, parservalue.NewPath(), value.NewValueWriter()).ServeHTTP,
 			logger,
 		),
 	)

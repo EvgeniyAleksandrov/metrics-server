@@ -48,7 +48,7 @@ func WithLogging(handlerFunc http.HandlerFunc, logger Logger) http.HandlerFunc {
 		handlerFunc(lResp, req)
 
 		logger.Info(
-			"Resuest and Response data",
+			"Request and Response data",
 			zap.String("uri", req.RequestURI),
 			zap.String("method", req.Method),
 			zap.Int("responseCode", lResp.GetStatus()),

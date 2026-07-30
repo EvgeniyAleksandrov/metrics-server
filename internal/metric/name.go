@@ -38,4 +38,4 @@ const (
 )
 
 // Counter
-const PullCount Name = "PullCount"
+const PollCount Name = "PollCount"

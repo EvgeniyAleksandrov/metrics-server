@@ -10,8 +10,10 @@
 package handler_test
 
 import (
+	http "net/http"
 	reflect "reflect"
 
+	params "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,15 +42,92 @@ func (m *MockUpdateMetricProcessor) EXPECT() *MockUpdateMetricProcessorMockRecor
 }
 
 // Update mocks base method.
-func (m *MockUpdateMetricProcessor) Update(method, name, value string) error {
+func (m *MockUpdateMetricProcessor) Update(updateParams params.Update) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", method, name, value)
+	ret := m.ctrl.Call(m, "Update", updateParams)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUpdateMetricProcessorMockRecorder) Update(method, name, value any) *gomock.Call {
+func (mr *MockUpdateMetricProcessorMockRecorder) Update(updateParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), method, name, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), updateParams)
+}
+
+// MockUpdateParamsParser is a mock of UpdateParamsParser interface.
+type MockUpdateParamsParser struct {
+	ctrl     *gomock.Controller
+	recorder *MockUpdateParamsParserMockRecorder
+	isgomock struct{}
+}
+
+// MockUpdateParamsParserMockRecorder is the mock recorder for MockUpdateParamsParser.
+type MockUpdateParamsParserMockRecorder struct {
+	mock *MockUpdateParamsParser
+}
+
+// NewMockUpdateParamsParser creates a new mock instance.
+func NewMockUpdateParamsParser(ctrl *gomock.Controller) *MockUpdateParamsParser {
+	mock := &MockUpdateParamsParser{ctrl: ctrl}
+	mock.recorder = &MockUpdateParamsParserMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUpdateParamsParser) EXPECT() *MockUpdateParamsParserMockRecorder {
+	return m.recorder
+}
+
+// Parse mocks base method.
+func (m *MockUpdateParamsParser) Parse(req *http.Request) (*params.Update, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Parse", req)
+	ret0, _ := ret[0].(*params.Update)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Parse indicates an expected call of Parse.
+func (mr *MockUpdateParamsParserMockRecorder) Parse(req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockUpdateParamsParser)(nil).Parse), req)
+}
+
+// MockUpdateResponseWriter is a mock of UpdateResponseWriter interface.
+type MockUpdateResponseWriter struct {
+	ctrl     *gomock.Controller
+	recorder *MockUpdateResponseWriterMockRecorder
+	isgomock struct{}
+}
+
+// MockUpdateResponseWriterMockRecorder is the mock recorder for MockUpdateResponseWriter.
+type MockUpdateResponseWriterMockRecorder struct {
+	mock *MockUpdateResponseWriter
+}
+
+// NewMockUpdateResponseWriter creates a new mock instance.
+func NewMockUpdateResponseWriter(ctrl *gomock.Controller) *MockUpdateResponseWriter {
+	mock := &MockUpdateResponseWriter{ctrl: ctrl}
+	mock.recorder = &MockUpdateResponseWriterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUpdateResponseWriter) EXPECT() *MockUpdateResponseWriterMockRecorder {
+	return m.recorder
+}
+
+// Write mocks base method.
+func (m *MockUpdateResponseWriter) Write(resp http.ResponseWriter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", resp)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Write indicates an expected call of Write.
+func (mr *MockUpdateResponseWriterMockRecorder) Write(resp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockUpdateResponseWriter)(nil).Write), resp)
 }

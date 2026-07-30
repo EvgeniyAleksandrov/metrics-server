@@ -13,12 +13,12 @@ import (
 func TestPullCounter_GetAllWithCorrectResource_ReturnMetrics(t *testing.T) {
 	sut := getter.NewPullCounter()
 
-	metrics, err := sut.GetAll(resource.NewPullCounter())
+	metrics, err := sut.GetAll(resource.NewPollCounter())
 	require.NoError(t, err)
 	require.Len(t, metrics, 1)
 
 	testedMetic := metrics[0]
-	require.Equal(t, metric.PullCount, testedMetic.Name())
+	require.Equal(t, metric.PollCount, testedMetic.Name())
 	require.Equal(t, types.Counter(0), testedMetic.Value())
 }
 

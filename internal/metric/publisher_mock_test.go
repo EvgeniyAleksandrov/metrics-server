@@ -13,6 +13,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
+	metric "github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -53,4 +55,43 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 func (mr *MockHTTPClientMockRecorder) Do(req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockHTTPClient)(nil).Do), req)
+}
+
+// MockTranslator is a mock of Translator interface.
+type MockTranslator struct {
+	ctrl     *gomock.Controller
+	recorder *MockTranslatorMockRecorder
+	isgomock struct{}
+}
+
+// MockTranslatorMockRecorder is the mock recorder for MockTranslator.
+type MockTranslatorMockRecorder struct {
+	mock *MockTranslator
+}
+
+// NewMockTranslator creates a new mock instance.
+func NewMockTranslator(ctrl *gomock.Controller) *MockTranslator {
+	mock := &MockTranslator{ctrl: ctrl}
+	mock.recorder = &MockTranslatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTranslator) EXPECT() *MockTranslatorMockRecorder {
+	return m.recorder
+}
+
+// Translate mocks base method.
+func (m_2 *MockTranslator) Translate(m *metric.Metric) (*models.Metrics, error) {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "Translate", m)
+	ret0, _ := ret[0].(*models.Metrics)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Translate indicates an expected call of Translate.
+func (mr *MockTranslatorMockRecorder) Translate(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Translate", reflect.TypeOf((*MockTranslator)(nil).Translate), m)
 }

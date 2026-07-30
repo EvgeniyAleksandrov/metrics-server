@@ -12,7 +12,8 @@ package service_test
 import (
 	reflect "reflect"
 
-	metric "github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
+	params "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,10 +42,10 @@ func (m *MockMethod) EXPECT() *MockMethodMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockMethod) Get(name string) (string, error) {
+func (m *MockMethod) Get(name string) (*models.Metrics, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", name)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*models.Metrics)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -71,10 +72,10 @@ func (mr *MockMethodMockRecorder) GetAll() *gomock.Call {
 }
 
 // GetType mocks base method.
-func (m *MockMethod) GetType() metric.ValueType {
+func (m *MockMethod) GetType() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetType")
-	ret0, _ := ret[0].(metric.ValueType)
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
@@ -85,15 +86,15 @@ func (mr *MockMethodMockRecorder) GetType() *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockMethod) Update(name, value string) error {
+func (m *MockMethod) Update(update params.Update) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", name, value)
+	ret := m.ctrl.Call(m, "Update", update)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockMethodMockRecorder) Update(name, value any) *gomock.Call {
+func (mr *MockMethodMockRecorder) Update(update any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockMethod)(nil).Update), name, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockMethod)(nil).Update), update)
 }

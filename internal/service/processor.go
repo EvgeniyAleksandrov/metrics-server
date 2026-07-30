@@ -4,23 +4,24 @@ package service
 import (
 	"fmt"
 
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
 type Method interface {
-	GetType() metric.ValueType
-	Update(name, value string) error
-	Get(name string) (string, error)
+	GetType() string
+	Update(update params.Update) error
+	Get(name string) (*models.Metrics, error)
 	GetAll() (map[string]string, error)
 }
 
 type Processor struct {
-	methods map[metric.ValueType]Method
+	methods map[string]Method
 }
 
 func NewProcessor(methods ...Method) *Processor {
 	processor := &Processor{
-		methods: make(map[metric.ValueType]Method, len(methods)),
+		methods: make(map[string]Method, len(methods)),
 	}
 
 	for _, method := range methods {
@@ -36,31 +37,31 @@ func NewProcessor(methods ...Method) *Processor {
 	return processor
 }
 
-func (p *Processor) Update(methodType, name, value string) error {
-	method, ok := p.methods[metric.ValueType(methodType)]
+func (p *Processor) Update(updateParams params.Update) error {
+	method, ok := p.methods[updateParams.MType]
 	if !ok {
 		return ErrUnsupportedProcessMethod
 	}
 
-	if err := method.Update(name, value); err != nil {
+	if err := method.Update(updateParams); err != nil {
 		return fmt.Errorf("update metric: %w", err)
 	}
 
 	return nil
 }
 
-func (p *Processor) Get(methodType string, name string) (string, error) {
-	method, ok := p.methods[metric.ValueType(methodType)]
+func (p *Processor) Get(valueParams params.Value) (*models.Metrics, error) {
+	method, ok := p.methods[valueParams.MType]
 	if !ok {
-		return "", ErrUnsupportedProcessMethod
+		return nil, ErrUnsupportedProcessMethod
 	}
 
-	value, err := method.Get(name)
+	modelsMetric, err := method.Get(valueParams.ID)
 	if err != nil {
-		return "", fmt.Errorf("get metric: %w", err)
+		return nil, fmt.Errorf("get metric: %w", err)
 	}
 
-	return value, nil
+	return modelsMetric, nil
 }
 
 func (p *Processor) GetAll() (map[string]map[string]string, error) {
@@ -72,7 +73,7 @@ func (p *Processor) GetAll() (map[string]map[string]string, error) {
 			return nil, fmt.Errorf("get metrics: %w", err)
 		}
 
-		metrics[string(name)] = methodMetrics
+		metrics[name] = methodMetrics
 	}
 
 	return metrics, nil

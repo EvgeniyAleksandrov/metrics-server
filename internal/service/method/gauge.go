@@ -4,16 +4,15 @@ package method
 import (
 	"fmt"
 
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
-	"go.uber.org/zap"
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
 type GaugeStorage interface {
-	GaugeSet(name string, value types.Gauge) error
-	GaugeGet(name string) (types.Gauge, error)
-	GetAllGaugeValues() (map[string]types.Gauge, error)
+	SetGauge(name string, value float64) error
+	GetGauge(name string) (float64, error)
+	GetAllGaugeValues() (map[string]float64, error)
 }
 
 type Gauge struct {
@@ -28,27 +27,25 @@ func NewGauge(storage GaugeStorage, logger Logger) *Gauge {
 	}
 }
 
-func (g *Gauge) Update(name, value string) error {
-	preparedValue, err := types.GaugeFromString(value)
-	if err != nil {
-		g.logger.Warn("Gauge converter failed", zap.Error(err))
-		return service.ErrInvalidValueFormat
-	}
-
-	if err := g.storage.GaugeSet(name, preparedValue); err != nil {
-		return fmt.Errorf("set value: %w", err)
+func (g *Gauge) Update(updateParams params.Update) error {
+	if err := g.storage.SetGauge(updateParams.ID, *updateParams.Value); err != nil {
+		return fmt.Errorf("set gauge value: %w", err)
 	}
 
 	return nil
 }
 
-func (g *Gauge) Get(name string) (string, error) {
-	value, err := g.storage.GaugeGet(name)
+func (g *Gauge) Get(name string) (*models.Metrics, error) {
+	gaugeValue, err := g.storage.GetGauge(name)
 	if err != nil {
-		return "", fmt.Errorf("get gauge value: %w", err)
+		return nil, fmt.Errorf("get gauge value: %w", err)
 	}
 
-	return value.String(), nil
+	return &models.Metrics{
+		ID:    name,
+		MType: models.Gauge,
+		Value: &gaugeValue,
+	}, nil
 }
 
 func (g *Gauge) GetAll() (map[string]string, error) {
@@ -60,12 +57,12 @@ func (g *Gauge) GetAll() (map[string]string, error) {
 	values := make(map[string]string, len(gaugeValues))
 
 	for name, value := range gaugeValues {
-		values[name] = value.String()
+		values[name] = types.Gauge(value).String()
 	}
 
 	return values, nil
 }
 
-func (g *Gauge) GetType() metric.ValueType {
-	return metric.Gauge
+func (g *Gauge) GetType() string {
+	return models.Gauge
 }
