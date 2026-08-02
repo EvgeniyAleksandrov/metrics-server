@@ -6,7 +6,7 @@ import (
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/middlware"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/middleware"
 	parserupdate "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/update"
 	parservalue "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/value"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/response/update"
@@ -51,60 +51,32 @@ func main() {
 }
 
 func run(addr string, logger *zap.Logger) error {
+	// Build Services
 	memStorage := repository.NewMemStorage()
-
-	router := chi.NewRouter()
-
 	processor := service.NewProcessor(method.NewGauge(memStorage, logger), method.NewCounter(memStorage, logger))
 
-	router.Get("/", middlware.WithLogging(handler.NewRoot(processor).ServeHTTP, logger))
+	// Build Handlers
+	jsonValueHandler := handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter())
+	pathValueHandler := handler.NewValue(processor, parservalue.NewPath(), value.NewValueWriter())
+	jsonUpdateHandler := handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter())
+	pathUpdateHandler := handler.NewUpdate(processor, parserupdate.NewPath(logger), update.NewValueWriter())
 
-	router.Post(
-		"/value/",
-		middlware.WithLogging(
-			handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter()).ServeHTTP,
-			logger,
-		),
-	)
-	router.Post(
-		"/value",
-		middlware.WithLogging(
-			handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter()).ServeHTTP,
-			logger,
-		),
-	)
+	// Build router
+	router := chi.NewRouter()
 
-	router.Post(
-		"/update/",
-		middlware.WithLogging(
-			handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter()).ServeHTTP,
-			logger,
-		),
-	)
+	// middlewares
+	router.Use(middleware.NewCompression(logger).Do, middleware.NewLogging(logger).Do)
 
-	router.Post(
-		"/update",
-		middlware.WithLogging(
-			handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter()).ServeHTTP,
-			logger,
-		),
-	)
+	// handlers
+	router.Get("/", handler.NewRoot(processor).ServeHTTP)
 
-	router.Post(
-		"/update/{method}/{name}/{value}",
-		middlware.WithLogging(
-			handler.NewUpdate(processor, parserupdate.NewPath(logger), update.NewValueWriter()).ServeHTTP,
-			logger,
-		),
-	)
+	router.Post("/value/", jsonValueHandler.ServeHTTP)
+	router.Post("/value", jsonValueHandler.ServeHTTP)
+	router.Post("/update/", jsonUpdateHandler.ServeHTTP)
+	router.Post("/update", jsonUpdateHandler.ServeHTTP)
 
-	router.Get(
-		"/value/{method}/{name}",
-		middlware.WithLogging(
-			handler.NewValue(processor, parservalue.NewPath(), value.NewValueWriter()).ServeHTTP,
-			logger,
-		),
-	)
+	router.Post("/update/{method}/{name}/{value}", pathUpdateHandler.ServeHTTP)
+	router.Get("/value/{method}/{name}", pathValueHandler.ServeHTTP)
 
 	return http.ListenAndServe(addr, router)
 }

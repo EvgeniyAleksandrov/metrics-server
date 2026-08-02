@@ -1,4 +1,4 @@
-package middlware
+package middleware
 
 import (
 	"net/http"
@@ -37,17 +37,27 @@ func (w *loggingResponseWriter) GetStatus() int {
 	return w.status
 }
 
-func WithLogging(handlerFunc http.HandlerFunc, logger Logger) http.HandlerFunc {
-	l := func(resp http.ResponseWriter, req *http.Request) {
+type Logging struct {
+	logger Logger
+}
+
+func NewLogging(logger Logger) *Logging {
+	return &Logging{
+		logger: logger,
+	}
+}
+
+func (l *Logging) Do(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
 		lResp := &loggingResponseWriter{
 			ResponseWriter: resp,
 		}
 
-		handlerFunc(lResp, req)
+		handler.ServeHTTP(lResp, req)
 
-		logger.Info(
+		l.logger.Info(
 			"Request and Response data",
 			zap.String("uri", req.RequestURI),
 			zap.String("method", req.Method),
@@ -55,7 +65,5 @@ func WithLogging(handlerFunc http.HandlerFunc, logger Logger) http.HandlerFunc {
 			zap.Int("responseSize", lResp.GetSize()),
 			zap.Duration("responseTime", time.Now().Sub(start)),
 		)
-	}
-
-	return l
+	})
 }

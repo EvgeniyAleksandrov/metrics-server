@@ -26,6 +26,8 @@ func NewRoot(processor AllMetricsProcessor) *Root {
 }
 
 func (v *Root) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "text/html")
+
 	data, err := v.processor.GetAll()
 	if err != nil {
 		http.Error(res, "Load metrics data", http.StatusInternalServerError)
@@ -33,6 +35,8 @@ func (v *Root) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.WriteHeader(http.StatusOK)
+
+	//res.Header().Set("Content-Encoding", "gzip")
 
 	if err := v.tmpl.Execute(res, data); err != nil {
 		http.Error(res, "Load data to template Error", http.StatusInternalServerError)

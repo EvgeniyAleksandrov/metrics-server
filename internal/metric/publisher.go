@@ -3,6 +3,7 @@ package metric
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -62,14 +63,30 @@ func (p *Publisher) buildUpdateRequest(server string, m *Metric) (*http.Request,
 		return nil, fmt.Errorf("build json data: %w", err)
 	}
 
-	byteBuffer := bytes.NewBuffer(jsonData)
+	var byteBuffer bytes.Buffer
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/update/", server), byteBuffer)
+	gzWriter := gzip.NewWriter(&byteBuffer)
+
+	if _, err := gzWriter.Write(jsonData); err != nil {
+		return nil, fmt.Errorf("gzip write data: %w", err)
+	}
+
+	if err := gzWriter.Close(); err != nil {
+		return nil, fmt.Errorf("close gzip writer: %w", err)
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/update/", server),
+		bytes.NewReader(byteBuffer.Bytes()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "application/gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
 	return req, nil
 }
