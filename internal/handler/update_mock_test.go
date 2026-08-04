@@ -118,16 +118,40 @@ func (m *MockUpdateResponseWriter) EXPECT() *MockUpdateResponseWriterMockRecorde
 	return m.recorder
 }
 
-// Write mocks base method.
-func (m *MockUpdateResponseWriter) Write(resp http.ResponseWriter) error {
+// WriteBody mocks base method.
+func (m *MockUpdateResponseWriter) WriteBody(resp http.ResponseWriter) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", resp)
+	ret := m.ctrl.Call(m, "WriteBody", resp)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Write indicates an expected call of Write.
-func (mr *MockUpdateResponseWriterMockRecorder) Write(resp any) *gomock.Call {
+// WriteBody indicates an expected call of WriteBody.
+func (mr *MockUpdateResponseWriterMockRecorder) WriteBody(resp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockUpdateResponseWriter)(nil).Write), resp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteBody", reflect.TypeOf((*MockUpdateResponseWriter)(nil).WriteBody), resp)
+}
+
+// WriteError mocks base method.
+func (m *MockUpdateResponseWriter) WriteError(resp http.ResponseWriter, err string, code int) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "WriteError", resp, err, code)
+}
+
+// WriteError indicates an expected call of WriteError.
+func (mr *MockUpdateResponseWriterMockRecorder) WriteError(resp, err, code any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteError", reflect.TypeOf((*MockUpdateResponseWriter)(nil).WriteError), resp, err, code)
+}
+
+// WriteHeaders mocks base method.
+func (m *MockUpdateResponseWriter) WriteHeaders(resp http.ResponseWriter) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "WriteHeaders", resp)
+}
+
+// WriteHeaders indicates an expected call of WriteHeaders.
+func (mr *MockUpdateResponseWriterMockRecorder) WriteHeaders(resp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteHeaders", reflect.TypeOf((*MockUpdateResponseWriter)(nil).WriteHeaders), resp)
 }

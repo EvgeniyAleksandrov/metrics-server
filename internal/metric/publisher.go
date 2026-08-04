@@ -46,9 +46,11 @@ func (p *Publisher) Publish(server string, m *Metric) error {
 		return fmt.Errorf("make request: %w", err)
 	}
 
-	if res != nil || res.Body != nil {
-		defer res.Body.Close()
+	if res == nil || res.Body == nil {
+		return fmt.Errorf("empty response")
 	}
+
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("publishing err with status %s: %w", res.Status, ErrNotPublished)

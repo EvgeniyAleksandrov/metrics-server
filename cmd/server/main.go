@@ -1,8 +1,13 @@
 package main
 
 import (
-	"flag"
+	"context"
+	"errors"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
@@ -14,7 +19,6 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/service/method"
-	"github.com/caarlos0/env"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -28,32 +32,35 @@ func main() {
 	}
 	defer logger.Sync()
 
-	serverConfig := config.Server{}
-
-	flag.StringVar(
-		&serverConfig.Address,
-		"a",
-		"localhost:8080",
-		"The address and port on which the server listens for connections.",
-	)
-
-	flag.Parse()
-
-	if err := env.Parse(&serverConfig); err != nil {
+	serverConfig, err := config.ParseServerConfig()
+	if err != nil {
 		logger.Fatal("Parse config error.", zap.Error(err))
 	}
 
-	logger.Info("Start server. ", zap.String("address", serverConfig.Address))
+	stopContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGKILL)
+	defer stop()
 
-	if err := run(serverConfig.Address, logger); err != nil {
+	if err := run(stopContext, serverConfig, logger); err != nil {
 		logger.Sugar().Fatalf("server run: %s", err.Error())
 	}
 }
 
-func run(addr string, logger *zap.Logger) error {
+func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) error {
 	// Build Services
 	memStorage := repository.NewMemStorage()
-	processor := service.NewProcessor(method.NewGauge(memStorage, logger), method.NewCounter(memStorage, logger))
+
+	fileStorage := repository.NewStorageSaver(ctx, memStorage, serverConfig.FilePath, logger, serverConfig.StoreInterval)
+
+	if serverConfig.Restore {
+		logger.Info("Start data loading")
+		if err := fileStorage.Load(); err != nil {
+			logger.Warn("Load data from file failed", zap.Error(err))
+		} else {
+			logger.Info("Data was loaded from file", zap.String("filepath", serverConfig.FilePath))
+		}
+	}
+
+	processor := service.NewProcessor(method.NewGauge(fileStorage, logger), method.NewCounter(fileStorage, logger))
 
 	// Build Handlers
 	jsonValueHandler := handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter())
@@ -78,5 +85,36 @@ func run(addr string, logger *zap.Logger) error {
 	router.Post("/update/{method}/{name}/{value}", pathUpdateHandler.ServeHTTP)
 	router.Get("/value/{method}/{name}", pathValueHandler.ServeHTTP)
 
-	return http.ListenAndServe(addr, router)
+	srv := &http.Server{
+		Addr:    serverConfig.Address,
+		Handler: router,
+	}
+
+	errChan := make(chan error, 1)
+	go func() {
+		logger.Info(
+			"Server is started",
+			zap.String("address", serverConfig.Address),
+			zap.String("filePath", serverConfig.FilePath),
+			zap.Bool("restoreFromFile", serverConfig.Restore),
+			zap.Int("restoreInterval", serverConfig.StoreInterval),
+		)
+		errChan <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-errChan:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	case <-ctx.Done():
+		logger.Info("Shutting down server gracefully...")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Корректно останавливаем сервер
+		return srv.Shutdown(shutdownCtx)
+	}
 }

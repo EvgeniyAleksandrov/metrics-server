@@ -1,8 +1,12 @@
 package repository
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
+
+	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
 var ErrNotFoundElement = errors.New("not found element")
@@ -25,6 +29,10 @@ func (s *MemStorage) SetGauge(name string, value float64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	return s.setGauge(name, value)
+}
+
+func (s *MemStorage) setGauge(name string, value float64) error {
 	s.gauge[name] = value
 	return nil
 }
@@ -33,6 +41,10 @@ func (s *MemStorage) AddCounter(name string, value int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	return s.addCounter(name, value)
+}
+
+func (s *MemStorage) addCounter(name string, value int64) error {
 	if _, ok := s.counters[name]; !ok {
 		s.counters[name] = value
 		return nil
@@ -77,4 +89,68 @@ func (s *MemStorage) GetAllCounterValues() (map[string]int64, error) {
 	defer s.mu.RUnlock()
 
 	return s.counters, nil
+}
+
+func (s *MemStorage) Marshal() ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	metricsSlice := make([]models.Metrics, 0, len(s.gauge)+len(s.counters))
+
+	for name, gValue := range s.gauge {
+		metricsSlice = append(metricsSlice,
+			models.Metrics{
+				ID:    name,
+				MType: models.Gauge,
+				Value: &gValue,
+			},
+		)
+	}
+
+	for name, cValue := range s.counters {
+		metricsSlice = append(metricsSlice,
+			models.Metrics{
+				ID:    name,
+				MType: models.Counter,
+				Delta: &cValue,
+			},
+		)
+	}
+
+	jsonData, err := json.Marshal(metricsSlice)
+	if err != nil {
+		return nil, fmt.Errorf("marshal metrics: %w", err)
+	}
+
+	return jsonData, nil
+}
+
+func (s *MemStorage) Unmarshal(jsonData []byte) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var metricSlice []models.Metrics
+
+	if err := json.Unmarshal(jsonData, &metricSlice); err != nil {
+		return fmt.Errorf("unmarshal json data: %w", err)
+	}
+
+	for _, metric := range metricSlice {
+		switch metric.MType {
+		case models.Gauge:
+			if metric.Value == nil {
+				continue
+			}
+
+			_ = s.setGauge(metric.ID, *metric.Value)
+		case models.Counter:
+			if metric.Delta == nil {
+				continue
+			}
+
+			_ = s.addCounter(metric.ID, *metric.Delta)
+		}
+	}
+
+	return nil
 }

@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
@@ -59,8 +58,6 @@ func (v *Value) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("PARAMS: %+v\n", valueParams)
-
 	metricValue, err := v.processor.Get(*valueParams)
 	if err != nil {
 		switch {
@@ -71,8 +68,6 @@ func (v *Value) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		}
 		return
 	}
-
-	log.Printf("METRICS: %+v\n", metricValue)
 
 	if err := v.responseWriter.WriteBody(resp, *metricValue); err != nil {
 		v.responseWriter.WriteError(resp, "Write response error", http.StatusInternalServerError)

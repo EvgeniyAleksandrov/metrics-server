@@ -39,8 +39,6 @@ func NewUpdate(metricProcessor UpdateMetricProcessor, requestParser UpdateParams
 func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	u.responseWriter.WriteHeaders(resp)
 
-	resp.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 	updateParams, err := u.requestParser.Parse(req)
 	if err != nil {
 		switch {

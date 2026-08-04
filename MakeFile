@@ -16,7 +16,7 @@ bin:
 	mkdir .\bin
 
 run-server:
-	go run .\cmd\server\main.go
+	go run .\cmd\server\main.go -i 2 -f ./f.json
 
 run-agent:
 	go run .\cmd\agent\main.go
