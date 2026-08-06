@@ -1,42 +1,37 @@
-//go:generate mockgen -source=gauge.go -destination=gauge_mock_test.go -package=method_test
 package method
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
-type GaugeStorage interface {
-	SetGauge(name string, value float64) error
-	GetGauge(name string) (float64, error)
-	GetAllGaugeValues() (map[string]float64, error)
-}
-
 type Gauge struct {
-	storage GaugeStorage
-	logger  Logger
+	storage interfaces.Storage
+	logger  interfaces.Logger
 }
 
-func NewGauge(storage GaugeStorage, logger Logger) *Gauge {
+func NewGauge(storage interfaces.Storage, logger interfaces.Logger) *Gauge {
 	return &Gauge{
 		storage: storage,
 		logger:  logger,
 	}
 }
 
-func (g *Gauge) Update(updateParams params.Update) error {
-	if err := g.storage.SetGauge(updateParams.ID, *updateParams.Value); err != nil {
+func (g *Gauge) Update(ctx context.Context, updateParams params.Update) error {
+	if err := g.storage.SetGauge(ctx, updateParams.ID, *updateParams.Value); err != nil {
 		return fmt.Errorf("set gauge value: %w", err)
 	}
 
 	return nil
 }
 
-func (g *Gauge) Get(name string) (*models.Metrics, error) {
-	gaugeValue, err := g.storage.GetGauge(name)
+func (g *Gauge) Get(ctx context.Context, name string) (*models.Metrics, error) {
+	gaugeValue, err := g.storage.GetGauge(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("get gauge value: %w", err)
 	}
@@ -48,8 +43,8 @@ func (g *Gauge) Get(name string) (*models.Metrics, error) {
 	}, nil
 }
 
-func (g *Gauge) GetAll() (map[string]string, error) {
-	gaugeValues, err := g.storage.GetAllGaugeValues()
+func (g *Gauge) GetAll(ctx context.Context) (map[string]string, error) {
+	gaugeValues, err := g.storage.GetAllGaugeValues(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get gauge value: %w", err)
 	}

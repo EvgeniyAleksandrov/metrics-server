@@ -16,7 +16,7 @@ func NewValueWriter() *ValueWriter {
 }
 
 func (w *ValueWriter) WriteHeaders(resp http.ResponseWriter) {
-	resp.Header().Set("Content-Type", "plain/text; charset=utf-8")
+	resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
 func (w *ValueWriter) WriteError(resp http.ResponseWriter, err string, code int) {

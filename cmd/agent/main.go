@@ -25,7 +25,7 @@ import (
 func main() {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		panic(fmt.Sprintf("Can't create logger: %s", err.Error()))
+		panic(fmt.Sprintf("Can't create interfaces: %s", err.Error()))
 	}
 
 	defer logger.Sync()

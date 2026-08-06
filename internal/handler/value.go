@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
@@ -12,7 +14,7 @@ import (
 )
 
 type ValueMetricsProcessor interface {
-	Get(valueParams params.Value) (*models.Metrics, error)
+	Get(ctx context.Context, valueParams params.Value) (*models.Metrics, error)
 }
 
 type ValueParamsParser interface {
@@ -58,7 +60,10 @@ func (v *Value) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	metricValue, err := v.processor.Get(*valueParams)
+	getContext, cancel := context.WithTimeout(req.Context(), time.Duration(5)*time.Second)
+	defer cancel()
+
+	metricValue, err := v.processor.Get(getContext, *valueParams)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrUnsupportedProcessMethod) || errors.Is(err, repository.ErrNotFoundElement):

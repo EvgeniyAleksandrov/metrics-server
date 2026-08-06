@@ -12,6 +12,7 @@ type Server struct {
 	StoreInterval int    `env:"STORE_INTERVAL"`
 	FilePath      string `env:"FILE_STORAGE_PATH"`
 	Restore       bool   `env:"RESTORE"`
+	DatabaseDSN   string `env:"DATABASE_DSN"`
 }
 
 func ParseServerConfig() (*Server, error) {
@@ -27,6 +28,7 @@ func ParseServerConfig() (*Server, error) {
 	flag.IntVar(&serverConfig.StoreInterval, "i", 300, "intervale for save storage to disk")
 	flag.StringVar(&serverConfig.FilePath, "f", "db.json", "storage file path")
 	flag.BoolVar(&serverConfig.Restore, "r", true, "need to restore data from file")
+	flag.StringVar(&serverConfig.DatabaseDSN, "d", "", "postgress database connection string")
 
 	flag.Parse()
 

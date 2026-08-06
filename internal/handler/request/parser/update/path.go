@@ -5,20 +5,17 @@ import (
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 	"go.uber.org/zap"
 )
 
-type Logger interface {
-	Warn(msg string, fields ...zap.Field)
-}
-
 type Path struct {
-	logger Logger
+	logger interfaces.Logger
 }
 
-func NewPath(logger Logger) *Path {
+func NewPath(logger interfaces.Logger) *Path {
 	return &Path{
 		logger: logger,
 	}

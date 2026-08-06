@@ -2,6 +2,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
@@ -10,9 +11,9 @@ import (
 
 type Method interface {
 	GetType() string
-	Update(update params.Update) error
-	Get(name string) (*models.Metrics, error)
-	GetAll() (map[string]string, error)
+	Update(ctx context.Context, update params.Update) error
+	Get(ctx context.Context, name string) (*models.Metrics, error)
+	GetAll(ctx context.Context) (map[string]string, error)
 }
 
 type Processor struct {
@@ -37,26 +38,26 @@ func NewProcessor(methods ...Method) *Processor {
 	return processor
 }
 
-func (p *Processor) Update(updateParams params.Update) error {
+func (p *Processor) Update(ctx context.Context, updateParams params.Update) error {
 	method, ok := p.methods[updateParams.MType]
 	if !ok {
 		return ErrUnsupportedProcessMethod
 	}
 
-	if err := method.Update(updateParams); err != nil {
+	if err := method.Update(ctx, updateParams); err != nil {
 		return fmt.Errorf("update metric: %w", err)
 	}
 
 	return nil
 }
 
-func (p *Processor) Get(valueParams params.Value) (*models.Metrics, error) {
+func (p *Processor) Get(ctx context.Context, valueParams params.Value) (*models.Metrics, error) {
 	method, ok := p.methods[valueParams.MType]
 	if !ok {
 		return nil, ErrUnsupportedProcessMethod
 	}
 
-	modelsMetric, err := method.Get(valueParams.ID)
+	modelsMetric, err := method.Get(ctx, valueParams.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get metric: %w", err)
 	}
@@ -64,11 +65,11 @@ func (p *Processor) Get(valueParams params.Value) (*models.Metrics, error) {
 	return modelsMetric, nil
 }
 
-func (p *Processor) GetAll() (map[string]map[string]string, error) {
+func (p *Processor) GetAll(ctx context.Context) (map[string]map[string]string, error) {
 	metrics := make(map[string]map[string]string, len(p.methods))
 
 	for name, method := range p.methods {
-		methodMetrics, err := method.GetAll()
+		methodMetrics, err := method.GetAll(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("get metrics: %w", err)
 		}

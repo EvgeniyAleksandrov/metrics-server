@@ -1,42 +1,37 @@
-//go:generate mockgen -source=counter.go -destination=counter_mock_test.go -package=method_test
 package method
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
-type CounterStorage interface {
-	AddCounter(name string, value int64) error
-	GetCounter(name string) (int64, error)
-	GetAllCounterValues() (map[string]int64, error)
-}
-
 type Counter struct {
-	storage CounterStorage
-	logger  Logger
+	storage interfaces.Storage
+	logger  interfaces.Logger
 }
 
-func NewCounter(storage CounterStorage, logger Logger) *Counter {
+func NewCounter(storage interfaces.Storage, logger interfaces.Logger) *Counter {
 	return &Counter{
 		storage: storage,
 		logger:  logger,
 	}
 }
 
-func (c *Counter) Update(updateParams params.Update) error {
-	if err := c.storage.AddCounter(updateParams.ID, *updateParams.Delta); err != nil {
+func (c *Counter) Update(ctx context.Context, updateParams params.Update) error {
+	if err := c.storage.AddCounter(ctx, updateParams.ID, *updateParams.Delta); err != nil {
 		return fmt.Errorf("add counter value: %w", err)
 	}
 
 	return nil
 }
 
-func (c *Counter) Get(name string) (*models.Metrics, error) {
-	counterValue, err := c.storage.GetCounter(name)
+func (c *Counter) Get(ctx context.Context, name string) (*models.Metrics, error) {
+	counterValue, err := c.storage.GetCounter(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("get counter value: %w", err)
 	}
@@ -48,8 +43,8 @@ func (c *Counter) Get(name string) (*models.Metrics, error) {
 	}, nil
 }
 
-func (c *Counter) GetAll() (map[string]string, error) {
-	counterValues, err := c.storage.GetAllCounterValues()
+func (c *Counter) GetAll(ctx context.Context) (map[string]string, error) {
+	counterValues, err := c.storage.GetAllCounterValues(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get all counter values: %w", err)
 	}

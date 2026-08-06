@@ -10,6 +10,7 @@
 package handler_test
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
@@ -42,17 +43,17 @@ func (m *MockUpdateMetricProcessor) EXPECT() *MockUpdateMetricProcessorMockRecor
 }
 
 // Update mocks base method.
-func (m *MockUpdateMetricProcessor) Update(updateParams params.Update) error {
+func (m *MockUpdateMetricProcessor) Update(ctx context.Context, updateParams params.Update) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", updateParams)
+	ret := m.ctrl.Call(m, "Update", ctx, updateParams)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUpdateMetricProcessorMockRecorder) Update(updateParams any) *gomock.Call {
+func (mr *MockUpdateMetricProcessorMockRecorder) Update(ctx, updateParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), updateParams)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), ctx, updateParams)
 }
 
 // MockUpdateParamsParser is a mock of UpdateParamsParser interface.

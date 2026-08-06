@@ -18,6 +18,9 @@ bin:
 run-server:
 	go run .\cmd\server\main.go -i 2 -f ./f.json
 
+run-server-with-db:
+	go run .\cmd\server\main.go -d "postgres://postgres:123456@localhost:5432/test?sslmode=disable"
+
 run-agent:
 	go run .\cmd\agent\main.go
 
