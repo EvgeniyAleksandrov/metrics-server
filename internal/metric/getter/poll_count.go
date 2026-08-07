@@ -22,5 +22,5 @@ func (a *PullCounter) GetAll(r resource.Resource) ([]*metric.Metric, error) {
 		return nil, ErrInvalidResource
 	}
 
-	return []*metric.Metric{metric.NewMetric(metric.PullCount, types.Counter(pCounter))}, nil
+	return []*metric.Metric{metric.NewMetric(metric.PollCount, types.Counter(pCounter))}, nil
 }

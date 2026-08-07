@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,28 +12,40 @@ import (
 	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/agent"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/getter"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator/translation"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
+	"github.com/caarlos0/env"
+	"go.uber.org/zap"
 )
 
 func main() {
-	var (
-		serverAddr     string
-		pullInterval   int
-		reportInterval int
-	)
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(fmt.Sprintf("Can't create logger: %s", err.Error()))
+	}
 
-	flag.StringVar(&serverAddr, "a", "localhost:8080", "Server's address and port.")
-	flag.IntVar(&pullInterval, "p", 2, "Metric collection interval.")
-	flag.IntVar(&reportInterval, "r", 10, "Report sending interval.")
+	defer logger.Sync()
+
+	agentConfig := config.Agent{}
+
+	flag.StringVar(&agentConfig.Address, "a", "localhost:8080", "Server's address and port.")
+	flag.IntVar(&agentConfig.PoolInterval, "p", 2, "Metric collection interval.")
+	flag.IntVar(&agentConfig.ReportInterval, "r", 10, "Report sending interval.")
 
 	flag.Parse()
+
+	if err := env.Parse(&agentConfig); err != nil {
+		logger.Fatal("Parse config error", zap.Error(err))
+	}
 
 	a := agent.NewAgent(
 		resource.NewManager(
 			resource.NewMemory(),
-			resource.NewPullCounter(),
+			resource.NewPollCounter(),
 			resource.NewRandom(),
 		),
 		[]agent.MetricGetter{
@@ -41,10 +53,11 @@ func main() {
 			getter.NewPullCounter(),
 			getter.NewMemory(),
 		},
-		metric.NewPublisher(&http.Client{}),
-		serverAddr,
-		time.Duration(pullInterval)*time.Second,
-		time.Duration(reportInterval)*time.Second,
+		metric.NewPublisher(&http.Client{}, translator.NewMetric(translation.NewGauge(), translation.NewCounter())),
+		agentConfig.Address,
+		time.Duration(agentConfig.PoolInterval)*time.Second,
+		time.Duration(agentConfig.ReportInterval)*time.Second,
+		logger,
 	)
 
 	stopContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGKILL)
@@ -53,7 +66,12 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	log.Println("Agent started.")
+	logger.Info(
+		"Agent started",
+		zap.String("addr", agentConfig.Address),
+		zap.Int("pollInterval", agentConfig.PoolInterval),
+		zap.Int("reportInterval", agentConfig.ReportInterval),
+	)
 
 	go func() {
 		a.Run(stopContext)
@@ -62,6 +80,5 @@ func main() {
 
 	wg.Wait()
 
-	log.Println("Agent stoped.")
-
+	logger.Info("Agent finished")
 }

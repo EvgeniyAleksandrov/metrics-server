@@ -3,91 +3,70 @@ package handler
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
-	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 )
 
 type UpdateMetricProcessor interface {
-	Update(method string, name string, value string) error
+	Update(updateParams params.Update) error
+}
+
+type UpdateParamsParser interface {
+	Parse(req *http.Request) (*params.Update, error)
+}
+
+type UpdateResponseWriter interface {
+	WriteHeaders(resp http.ResponseWriter)
+	WriteError(resp http.ResponseWriter, err string, code int)
+	WriteBody(resp http.ResponseWriter) error
 }
 
 type Update struct {
 	metricProcessor UpdateMetricProcessor
+	requestParser   UpdateParamsParser
+	responseWriter  UpdateResponseWriter
 }
 
-func NewUpdate(metricProcessor UpdateMetricProcessor) *Update {
+func NewUpdate(metricProcessor UpdateMetricProcessor, requestParser UpdateParamsParser, responseWriter UpdateResponseWriter) *Update {
 	return &Update{
 		metricProcessor: metricProcessor,
+		requestParser:   requestParser,
+		responseWriter:  responseWriter,
 	}
 }
 
 func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		http.Error(resp, "unsupported method", http.StatusMethodNotAllowed)
-		return
-	}
+	u.responseWriter.WriteHeaders(resp)
 
-	method := req.PathValue("method")
-	name := req.PathValue("name")
-	value := req.PathValue("value")
-
-	if method == "" || name == "" || value == "" {
-		http.Error(resp, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	if err := u.metricProcessor.Update(method, name, value); err != nil {
+	updateParams, err := u.requestParser.Parse(req)
+	if err != nil {
 		switch {
-		case errors.Is(err, service.ErrUnsupportedProcessMethod):
-			http.Error(resp, "Unsupported method", http.StatusBadRequest)
-
-		case errors.Is(err, service.ErrInvalidValueFormat):
-			http.Error(resp, "Invalid value format", http.StatusBadRequest)
-
+		case errors.Is(err, ErrUnsupportedMetricType):
+			u.responseWriter.WriteError(resp, "Unsupported method", http.StatusBadRequest)
+		case errors.Is(err, ErrInvalidValueFormat):
+			u.responseWriter.WriteError(resp, "Invalid value format", http.StatusBadRequest)
+		case errors.Is(err, ErrInvalidParams):
+			u.responseWriter.WriteError(resp, "Not found", http.StatusNotFound)
 		default:
-			http.Error(resp, "Not initialized error", http.StatusInternalServerError)
+			u.responseWriter.WriteError(resp, "Request parsing error", http.StatusInternalServerError)
 		}
 
 		return
 	}
 
-	log.Printf("metirc name:%s, value: %s, method: %s processed\n", name, value, method)
-	u.writeHeaders(resp)
-	resp.WriteHeader(http.StatusOK)
+	if updateParams == nil {
+		u.responseWriter.WriteError(resp, "Unexpected params", http.StatusInternalServerError)
+		return
+	}
 
+	if err := u.metricProcessor.Update(*updateParams); err != nil {
+		u.responseWriter.WriteError(resp, "Processing request failed", http.StatusInternalServerError)
+		return
+	}
+
+	if err := u.responseWriter.WriteBody(resp); err != nil {
+		u.responseWriter.WriteError(resp, "Write header error", http.StatusInternalServerError)
+		return
+	}
 }
-
-func (u *Update) writeHeaders(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "plain/text")
-	w.Header().Set("charset", "utf-8")
-}
-
-// func (c *Update) POST(w http.ResponseWriter, r *http.Request) {
-// 	param, err := c.paramsGetter.Get(r)
-// 	if err != nil {
-// 		switch {
-// 		case errors.Is(err, metric.ErrEmptyName) || errors.Is(err, metric.ErrEmptyValue):
-// 			log.Printf("counter POST: %s", err.Error())
-// 			http.Error(w, "empty name", http.StatusNotFound)
-// 		default:
-// 			http.Error(w, "unexpected error", http.StatusBadRequest)
-// 		}
-// 	}
-
-// 	i, err := strconv.Atoi(param.Value)
-// 	if err != nil {
-// 		http.Error(w, "not correct value format", http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	value := int64(i)
-
-// 	// TODO: write param to data base
-
-// 	w.Write([]byte(fmt.Sprintf("name: %s, value: %d", param.Name, value)))
-// }
-
-// func (u *Update) parseParams(r *http.Request) (*updateParams, error) {
-// }
