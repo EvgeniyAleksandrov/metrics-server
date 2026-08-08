@@ -109,6 +109,12 @@ func (s *DBStorage) GetAllGaugeValues(ctx context.Context) (map[string]float64, 
 		return nil, fmt.Errorf("select all gauge values: %w", err)
 	}
 
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.Warn("Close rows error", zap.Error(err))
+		}
+	}()
+
 	gauges := make(map[string]float64)
 
 	var (
@@ -124,6 +130,10 @@ func (s *DBStorage) GetAllGaugeValues(ctx context.Context) (map[string]float64, 
 		gauges[id] = value
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get rows error: %w", err)
+	}
+
 	return gauges, nil
 }
 
@@ -132,6 +142,12 @@ func (s *DBStorage) GetAllCounterValues(ctx context.Context) (map[string]int64, 
 	if err != nil {
 		return nil, fmt.Errorf("select all counter values: %w", err)
 	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			s.logger.Warn("Close rows error", zap.Error(err))
+		}
+	}()
 
 	counters := make(map[string]int64)
 
@@ -148,6 +164,10 @@ func (s *DBStorage) GetAllCounterValues(ctx context.Context) (map[string]int64, 
 		counters[id] = delta
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get rows error: %w", err)
+	}
+
 	return counters, nil
 }
 
@@ -161,7 +181,7 @@ func (s *DBStorage) Ping(ctx context.Context) error {
 
 func (s *DBStorage) Close() {
 	s.logger.Info("Close db connection")
-	
+
 	if err := s.db.Close(); err != nil {
 		s.logger.Warn("Close db connection with error", zap.Error(err))
 	}
