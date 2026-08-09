@@ -13,6 +13,7 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/middleware"
+	parserbatchupdate "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/batch/update"
 	parserupdate "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/update"
 	parservalue "github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/parser/value"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/response/update"
@@ -55,13 +56,23 @@ func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) e
 
 	defer storage.Close()
 
-	processor := service.NewProcessor(method.NewGauge(storage, logger), method.NewCounter(storage, logger))
+	counterMethod := method.NewCounter(storage, logger)
+	gaugeMethod := method.NewGauge(storage, logger)
+
+	processor := service.NewProcessor(gaugeMethod, counterMethod)
+	batchProcessor := service.NewBatchProcessor(gaugeMethod, counterMethod)
 
 	// Build Handlers
 	jsonValueHandler := handler.NewValue(processor, parservalue.NewJSON(MaxRequestSize), value.NewJSONWriter())
 	pathValueHandler := handler.NewValue(processor, parservalue.NewPath(), value.NewValueWriter())
 	jsonUpdateHandler := handler.NewUpdate(processor, parserupdate.NewJSON(MaxRequestSize), update.NewJSONWriter())
 	pathUpdateHandler := handler.NewUpdate(processor, parserupdate.NewPath(logger), update.NewValueWriter())
+
+	jsonUpdateBatchHandler := handler.NewUpdateBatch(
+		batchProcessor,
+		parserbatchupdate.NewJSON(MaxRequestSize),
+		update.NewJSONWriter(),
+	)
 
 	// Build router
 	router := chi.NewRouter()
@@ -78,6 +89,8 @@ func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) e
 	router.Post("/value", jsonValueHandler.ServeHTTP)
 	router.Post("/update/", jsonUpdateHandler.ServeHTTP)
 	router.Post("/update", jsonUpdateHandler.ServeHTTP)
+	router.Post("/updates/", jsonUpdateBatchHandler.ServeHTTP)
+	router.Post("/updates", jsonUpdateBatchHandler.ServeHTTP)
 
 	router.Post("/update/{method}/{name}/{value}", pathUpdateHandler.ServeHTTP)
 	router.Get("/value/{method}/{name}", pathValueHandler.ServeHTTP)
@@ -88,7 +101,7 @@ func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) e
 	}
 
 	errChan := make(chan error, 1)
-	
+
 	go func() {
 		logger.Info("Server is started", zap.String("address", serverConfig.Address))
 		errChan <- srv.ListenAndServe()

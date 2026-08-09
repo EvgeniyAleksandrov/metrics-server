@@ -6,6 +6,7 @@ import (
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
@@ -23,8 +24,22 @@ func NewCounter(storage interfaces.Storage, logger interfaces.Logger) *Counter {
 }
 
 func (c *Counter) Update(ctx context.Context, updateParams params.Update) error {
-	if err := c.storage.AddCounter(ctx, updateParams.ID, *updateParams.Delta); err != nil {
+	if err := c.storage.AddCounter(ctx, values.Counter{Name: updateParams.ID, Delta: *updateParams.Delta}); err != nil {
 		return fmt.Errorf("add counter value: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Counter) UpdateBatch(ctx context.Context, updates []params.Update) error {
+	counters := make([]values.Counter, len(updates))
+	for _, update := range updates {
+		fmt.Printf("U")
+		counters = append(counters, values.Counter{Name: update.ID, Delta: *update.Delta})
+	}
+
+	if err := c.storage.AddCounters(ctx, counters); err != nil {
+		return fmt.Errorf("add counters: %w", err)
 	}
 
 	return nil
@@ -49,13 +64,13 @@ func (c *Counter) GetAll(ctx context.Context) (map[string]string, error) {
 		return nil, fmt.Errorf("get all counter values: %w", err)
 	}
 
-	values := make(map[string]string, len(counterValues))
+	getValues := make(map[string]string, len(counterValues))
 
 	for name, counterValue := range counterValues {
-		values[name] = types.Counter(counterValue).String()
+		getValues[name] = types.Counter(counterValue).String()
 	}
 
-	return values, nil
+	return getValues, nil
 }
 
 func (c *Counter) GetType() string {

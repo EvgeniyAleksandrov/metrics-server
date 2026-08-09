@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	"go.uber.org/zap"
 )
 
@@ -57,8 +58,8 @@ func NewDBStorage(db *sql.DB, logger interfaces.Logger) *DBStorage {
 	}
 }
 
-func (s *DBStorage) SetGauge(ctx context.Context, name string, value float64) error {
-	_, err := s.db.ExecContext(ctx, insertGaugeSQL, name, value)
+func (s *DBStorage) SetGauge(ctx context.Context, gauge values.Gauge) error {
+	_, err := s.db.ExecContext(ctx, insertGaugeSQL, gauge.Name, gauge.Value)
 	if err != nil {
 		return fmt.Errorf("put gauge value to db: %w", err)
 	}
@@ -66,13 +67,77 @@ func (s *DBStorage) SetGauge(ctx context.Context, name string, value float64) er
 	return nil
 }
 
-func (s *DBStorage) AddCounter(ctx context.Context, name string, value int64) error {
-	_, err := s.db.ExecContext(ctx, insertCounterSQL, name, value)
+func (s *DBStorage) SetGauges(ctx context.Context, gauges []values.Gauge) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("create transaction: %w", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.Warn("Rollback error", zap.Error(err))
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, insertGaugeSQL)
+	if err != nil {
+		return fmt.Errorf("prepare gauge insert sql: %w", err)
+	}
+
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			s.logger.Warn("Close Gauge stmt error", zap.Error(err))
+		}
+	}()
+
+	for _, gauge := range gauges {
+		if _, err := stmt.ExecContext(ctx, gauge.Name, gauge.Value); err != nil {
+			return fmt.Errorf("put gauge value to db: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (s *DBStorage) AddCounter(ctx context.Context, counter values.Counter) error {
+	_, err := s.db.ExecContext(ctx, insertCounterSQL, counter.Name, counter.Delta)
 	if err != nil {
 		return fmt.Errorf("add counter to db: %w", err)
 	}
 
 	return nil
+}
+
+func (s *DBStorage) AddCounters(ctx context.Context, counters []values.Counter) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("create transaction: %w", err)
+	}
+
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			s.logger.Warn("Rollback error", zap.Error(err))
+		}
+	}()
+
+	stmt, err := tx.PrepareContext(ctx, insertCounterSQL)
+	if err != nil {
+		return fmt.Errorf("prepare counter insert sql: %w", err)
+	}
+
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			s.logger.Warn("Close Counter stmt error", zap.Error(err))
+		}
+	}()
+
+	for _, gauge := range counters {
+		if _, err := stmt.ExecContext(ctx, gauge.Name, gauge.Delta); err != nil {
+			return fmt.Errorf("add counter value to db: %w", err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *DBStorage) GetGauge(ctx context.Context, name string) (float64, error) {

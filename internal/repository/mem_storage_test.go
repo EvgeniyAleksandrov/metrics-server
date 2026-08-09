@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
 	"github.com/stretchr/testify/suite"
 )
@@ -23,13 +24,13 @@ func TestMemStorageSuite(t *testing.T) {
 func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithOneName_GetThisElementsAsSlice() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter(s.ctx, "A", 1)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
 	s.Require().NoError(err)
 
-	err = sut.AddCounter(s.ctx, "A", 2)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
 	s.Require().NoError(err)
 
-	err = sut.AddCounter(s.ctx, "A", 3)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 3})
 	s.Require().NoError(err)
 
 	values, err := sut.GetCounter(s.ctx, "A")
@@ -40,13 +41,13 @@ func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithOneName_GetThi
 func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithIdenticalName_GetAllCountersByName() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter(s.ctx, "A", 1)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
 	s.Require().NoError(err)
 
-	err = sut.AddCounter(s.ctx, "A", 2)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
 	s.Require().NoError(err)
 
-	err = sut.AddCounter(s.ctx, "B", 3)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "B", Delta: 3})
 	s.Require().NoError(err)
 
 	values, err := sut.GetCounter(s.ctx, "A")
@@ -61,10 +62,10 @@ func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithIdenticalName_
 func (s *MemStorageSuite) TestMemStorage_CounterGetUnavailableElement_ElementNotFoundError() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter(s.ctx, "A", 1)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
 	s.Require().NoError(err)
 
-	err = sut.AddCounter(s.ctx, "A", 2)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
 	s.Require().NoError(err)
 
 	values, err := sut.GetCounter(s.ctx, "B")
@@ -75,14 +76,14 @@ func (s *MemStorageSuite) TestMemStorage_CounterGetUnavailableElement_ElementNot
 func (s *MemStorageSuite) TestMemStorage_GaugeAddAnyElementsWithOneName_ElementWasUpdated() {
 	sut := repository.NewMemStorage()
 
-	err := sut.SetGauge(s.ctx, "A", 1.2)
+	err := sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.2})
 	s.Require().NoError(err)
 
 	value, err := sut.GetGauge(s.ctx, "A")
 	s.Require().NoError(err)
 	s.Require().Equal(1.2, value)
 
-	err = sut.SetGauge(s.ctx, "A", 1.5)
+	err = sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.5})
 	s.Require().NoError(err)
 
 	value, err = sut.GetGauge(s.ctx, "A")
@@ -93,7 +94,7 @@ func (s *MemStorageSuite) TestMemStorage_GaugeAddAnyElementsWithOneName_ElementW
 func (s *MemStorageSuite) TestMemStorage_AddGaugeElementGetCounterElementWithSameName_ElementWasNotFound() {
 	sut := repository.NewMemStorage()
 
-	err := sut.SetGauge(s.ctx, "A", 1.2)
+	err := sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.2})
 	s.Require().NoError(err)
 
 	value, err := sut.GetCounter(s.ctx, "A")
@@ -104,7 +105,7 @@ func (s *MemStorageSuite) TestMemStorage_AddGaugeElementGetCounterElementWithSam
 func (s *MemStorageSuite) TestMemStorage_AddCounterElementGetGaugeElementWithSameName_ElementWasNotFound() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter(s.ctx, "A", 1)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
 	s.Require().NoError(err)
 
 	value, err := sut.GetGauge(s.ctx, "A")

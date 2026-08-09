@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
@@ -23,32 +24,42 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (s *MemStorage) SetGauge(_ context.Context, name string, value float64) error {
+func (s *MemStorage) SetGauge(_ context.Context, gauge values.Gauge) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.setGauge(name, value)
+	return s.setGauge(gauge)
 }
 
-func (s *MemStorage) setGauge(name string, value float64) error {
-	s.gauge[name] = value
+func (s *MemStorage) SetGauges(_ context.Context, gauges []values.Gauge) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, gauge := range gauges {
+		if err := s.setGauge(gauge); err != nil {
+			return fmt.Errorf("set gauge from batch: %w", err)
+		}
+	}
+
 	return nil
 }
 
-func (s *MemStorage) AddCounter(_ context.Context, name string, value int64) error {
+func (s *MemStorage) AddCounter(_ context.Context, counter values.Counter) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.addCounter(name, value)
+	return s.addCounter(counter)
 }
 
-func (s *MemStorage) addCounter(name string, value int64) error {
-	if _, ok := s.counters[name]; !ok {
-		s.counters[name] = value
-		return nil
-	}
+func (s *MemStorage) AddCounters(_ context.Context, counters []values.Counter) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	s.counters[name] += value
+	for _, counter := range counters {
+		if err := s.addCounter(counter); err != nil {
+			return fmt.Errorf("set gauge from batch: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -144,13 +155,13 @@ func (s *MemStorage) Unmarshal(jsonData []byte) error {
 				continue
 			}
 
-			_ = s.setGauge(metric.ID, *metric.Value)
+			_ = s.setGauge(values.Gauge{Name: metric.ID, Value: *metric.Value})
 		case models.Counter:
 			if metric.Delta == nil {
 				continue
 			}
 
-			_ = s.addCounter(metric.ID, *metric.Delta)
+			_ = s.addCounter(values.Counter{Name: metric.ID, Delta: *metric.Delta})
 		}
 	}
 
@@ -158,3 +169,19 @@ func (s *MemStorage) Unmarshal(jsonData []byte) error {
 }
 
 func (s *MemStorage) Close() {}
+
+func (s *MemStorage) setGauge(gauge values.Gauge) error {
+	s.gauge[gauge.Name] = gauge.Value
+	return nil
+}
+
+func (s *MemStorage) addCounter(counter values.Counter) error {
+	if _, ok := s.counters[counter.Name]; !ok {
+		s.counters[counter.Name] = counter.Delta
+		return nil
+	}
+
+	s.counters[counter.Name] += counter.Delta
+
+	return nil
+}

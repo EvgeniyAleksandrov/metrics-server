@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	"go.uber.org/zap"
 )
 
@@ -90,17 +91,14 @@ func (s *StorageSaver) RunStorageSaveProcess(ctx context.Context) {
 
 			s.logger.Info("Storage was saved", zap.String("filePath", s.filePath))
 		case <-ctx.Done():
-			//if err := s.Save(); err != nil {
-			//	s.logger.Warn("Save storage failed", zap.Error(err))
-			//}
 			s.logger.Info("Stop storage write process")
 			return
 		}
 	}
 }
 
-func (s *StorageSaver) SetGauge(ctx context.Context, name string, value float64) error {
-	err := s.storage.SetGauge(ctx, name, value)
+func (s *StorageSaver) SetGauge(ctx context.Context, gauge values.Gauge) error {
+	err := s.storage.SetGauge(ctx, gauge)
 	if err != nil {
 		return err
 	}
@@ -113,8 +111,35 @@ func (s *StorageSaver) SetGauge(ctx context.Context, name string, value float64)
 	return nil
 }
 
-func (s *StorageSaver) AddCounter(ctx context.Context, name string, value int64) error {
-	err := s.storage.AddCounter(ctx, name, value)
+func (s *StorageSaver) SetGauges(ctx context.Context, gauges []values.Gauge) error {
+	err := s.storage.SetGauges(ctx, gauges)
+	if err != nil {
+		return err
+	}
+
+	// Синхронное сохранение, если интервал равен 0
+	if s.saveInterval == 0 {
+		return s.Save()
+	}
+
+	return nil
+}
+
+func (s *StorageSaver) AddCounter(ctx context.Context, counter values.Counter) error {
+	err := s.storage.AddCounter(ctx, counter)
+	if err != nil {
+		return err
+	}
+
+	if s.saveInterval == 0 {
+		return s.Save()
+	}
+
+	return nil
+}
+
+func (s *StorageSaver) AddCounters(ctx context.Context, counters []values.Counter) error {
+	err := s.storage.AddCounters(ctx, counters)
 	if err != nil {
 		return err
 	}

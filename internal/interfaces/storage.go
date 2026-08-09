@@ -3,11 +3,15 @@ package interfaces
 
 import (
 	"context"
+
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 )
 
 type Storage interface {
-	SetGauge(ctx context.Context, name string, value float64) error
-	AddCounter(ctx context.Context, name string, value int64) error
+	SetGauge(ctx context.Context, gauge values.Gauge) error
+	SetGauges(ctx context.Context, gauges []values.Gauge) error
+	AddCounters(ctx context.Context, counter []values.Counter) error
+	AddCounter(ctx context.Context, counter values.Counter) error
 	Ping(ctx context.Context) error
 	GetGauge(ctx context.Context, name string) (float64, error)
 	GetCounter(ctx context.Context, name string) (int64, error)

@@ -16,7 +16,7 @@ bin:
 	mkdir .\bin
 
 run-server:
-	go run .\cmd\server\main.go -i 2 -f ./f.json
+	go run .\cmd\server\main.go
 
 run-server-with-db:
 	go run .\cmd\server\main.go -d "postgres://postgres:123456@localhost:5432/test?sslmode=disable"
