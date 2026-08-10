@@ -46,8 +46,6 @@ func (p *JSON) Parse(r *http.Request) ([]params.Update, error) {
 		return nil, fmt.Errorf("decode batch json: %w", err)
 	}
 
-	log.Printf("DATA: %+v", updateParamsList)
-
 	for _, updateParams := range updateParamsList {
 		if updateParams.ID == "" {
 			return nil, handler.ErrInvalidParams

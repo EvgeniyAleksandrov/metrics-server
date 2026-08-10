@@ -1,6 +1,7 @@
 package metric_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator/translation"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/types"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/fake"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -30,14 +32,16 @@ func TestPublisherUpdate_PublicateGaugeMetric_ReturnNoError(t *testing.T) {
 		nil,
 	).Times(1)
 
+	fakeRetrier := fake.NewNopeRetrier()
+
 	metricTranslator := translator.NewMetric(
 		translation.NewGauge(),
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
 
-	err := sut.Publish("localhost", testMetric)
+	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.NoError(t, err)
 }
 
@@ -56,14 +60,16 @@ func TestPublisherUpdate_PublicateCounterMetric_ReturnNoError(t *testing.T) {
 		nil,
 	).Times(1)
 
+	fakeRetrier := fake.NewNopeRetrier()
+
 	metricTranslator := translator.NewMetric(
 		translation.NewGauge(),
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
 
-	err := sut.Publish("localhost", testMetric)
+	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.NoError(t, err)
 }
 
@@ -75,14 +81,16 @@ func TestPublisherUpdate_PublicateOnUnavailableServer_ReturnError(t *testing.T) 
 
 	mockHTTPClient.EXPECT().Do(gomock.Any()).Return(nil, ErrTestPublishing).Times(1)
 
+	fakeRetrier := fake.NewNopeRetrier()
+
 	metricTranslator := translator.NewMetric(
 		translation.NewGauge(),
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
 
-	err := sut.Publish("localhost", testMetric)
+	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.ErrorIs(t, err, ErrTestPublishing)
 }
 
@@ -101,14 +109,16 @@ func TestPublisherUpdate_PublicateWithNotOKStatus_ReturnError(t *testing.T) {
 		nil,
 	).Times(1)
 
+	fakeRetrier := fake.NewNopeRetrier()
+
 	metricTranslator := translator.NewMetric(
 		translation.NewGauge(),
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
 
-	err := sut.Publish("localhost", testMetric)
+	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.ErrorIs(t, err, metric.ErrNotPublished)
 	require.ErrorContains(t, err, "publishing err with status")
 }

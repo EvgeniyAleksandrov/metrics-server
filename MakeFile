@@ -27,6 +27,10 @@ run-agent:
 test:
 	go test ./...
 
+test-cover:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+
 generate: mockgen
 	go generate ./...
 

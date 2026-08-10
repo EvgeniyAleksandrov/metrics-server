@@ -27,3 +27,6 @@ vendor/
 
 # File storage
 db.json
+
+#coverage
+coverage.out

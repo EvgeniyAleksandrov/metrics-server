@@ -72,6 +72,7 @@ func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) e
 		batchProcessor,
 		parserbatchupdate.NewJSON(MaxRequestSize),
 		update.NewJSONWriter(),
+		logger,
 	)
 
 	// Build router

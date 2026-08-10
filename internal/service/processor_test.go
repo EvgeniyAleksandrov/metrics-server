@@ -7,7 +7,7 @@ package service_test
 //	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
 //	"github.com/EvgeniyAleksandrov/metrics-server/internal/service"
 //	"github.com/stretchr/testify/require"
-//	"go.uber.org/mock/gomock"
+//	"go.uber.org/fake/gomock"
 //)
 //
 //var ErrTest = errors.New("test error")

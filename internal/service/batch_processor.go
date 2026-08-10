@@ -52,8 +52,6 @@ func (p *BatchProcessor) UpdateBatch(ctx context.Context, updates []params.Updat
 		updateData[mType] = append(updateData[mType], update)
 	}
 
-	fmt.Printf("UPDATE DATA: %+v", updateData)
-
 	for mType, mUpdates := range updateData {
 		if err := p.batchMethods[mType].UpdateBatch(ctx, mUpdates); err != nil {
 			return fmt.Errorf("update batch method '%s': %w", mType, err)

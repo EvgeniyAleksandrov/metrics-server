@@ -24,7 +24,7 @@ func NewPing(storage interfaces.Storage, logger interfaces.Logger) *Ping {
 func (p *Ping) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Type", "plain/text")
 
-	pingContext, cancel := context.WithTimeout(req.Context(), time.Duration(5)*time.Second)
+	pingContext, cancel := context.WithTimeout(req.Context(), 5*time.Second)
 	defer cancel()
 
 	if err := p.storage.Ping(pingContext); err != nil {

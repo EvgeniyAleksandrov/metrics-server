@@ -10,6 +10,7 @@
 package metric_test
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
@@ -18,19 +19,19 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockHTTPClient is a mock of HTTPClient interface.
+// MockHTTPClient is a fake of HTTPClient interface.
 type MockHTTPClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockHTTPClientMockRecorder
 	isgomock struct{}
 }
 
-// MockHTTPClientMockRecorder is the mock recorder for MockHTTPClient.
+// MockHTTPClientMockRecorder is the fake recorder for MockHTTPClient.
 type MockHTTPClientMockRecorder struct {
 	mock *MockHTTPClient
 }
 
-// NewMockHTTPClient creates a new mock instance.
+// NewMockHTTPClient creates a new fake instance.
 func NewMockHTTPClient(ctrl *gomock.Controller) *MockHTTPClient {
 	mock := &MockHTTPClient{ctrl: ctrl}
 	mock.recorder = &MockHTTPClientMockRecorder{mock}
@@ -57,19 +58,19 @@ func (mr *MockHTTPClientMockRecorder) Do(req any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockHTTPClient)(nil).Do), req)
 }
 
-// MockTranslator is a mock of Translator interface.
+// MockTranslator is a fake of Translator interface.
 type MockTranslator struct {
 	ctrl     *gomock.Controller
 	recorder *MockTranslatorMockRecorder
 	isgomock struct{}
 }
 
-// MockTranslatorMockRecorder is the mock recorder for MockTranslator.
+// MockTranslatorMockRecorder is the fake recorder for MockTranslator.
 type MockTranslatorMockRecorder struct {
 	mock *MockTranslator
 }
 
-// NewMockTranslator creates a new mock instance.
+// NewMockTranslator creates a new fake instance.
 func NewMockTranslator(ctrl *gomock.Controller) *MockTranslator {
 	mock := &MockTranslator{ctrl: ctrl}
 	mock.recorder = &MockTranslatorMockRecorder{mock}
@@ -94,4 +95,42 @@ func (m_2 *MockTranslator) Translate(m *metric.Metric) (*models.Metrics, error) 
 func (mr *MockTranslatorMockRecorder) Translate(m any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Translate", reflect.TypeOf((*MockTranslator)(nil).Translate), m)
+}
+
+// MockRetrier is a fake of Retrier interface.
+type MockRetrier struct {
+	ctrl     *gomock.Controller
+	recorder *MockRetrierMockRecorder
+	isgomock struct{}
+}
+
+// MockRetrierMockRecorder is the fake recorder for MockRetrier.
+type MockRetrierMockRecorder struct {
+	mock *MockRetrier
+}
+
+// NewMockRetrier creates a new fake instance.
+func NewMockRetrier(ctrl *gomock.Controller) *MockRetrier {
+	mock := &MockRetrier{ctrl: ctrl}
+	mock.recorder = &MockRetrierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockRetrier) EXPECT() *MockRetrierMockRecorder {
+	return m.recorder
+}
+
+// Do mocks base method.
+func (m *MockRetrier) Do(ctx context.Context, fn func() error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Do", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Do indicates an expected call of Do.
+func (mr *MockRetrierMockRecorder) Do(ctx, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Do", reflect.TypeOf((*MockRetrier)(nil).Do), ctx, fn)
 }

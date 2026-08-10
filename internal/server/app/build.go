@@ -8,6 +8,9 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/config/db"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/checker/postgres"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/policy"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +26,12 @@ func BuildStorage(
 			return nil, fmt.Errorf("build db connection: %w", err)
 		}
 
-		return repository.NewDBStorage(dbConnection, logger), nil
+		postgresStorageRetrier := retry.NewRetry(
+			postgres.NewPGErrorChecker(),
+			policy.NewExponentialBackOff(3, 2),
+		)
+
+		return repository.NewDBStorage(dbConnection, logger, postgresStorageRetrier), nil
 	}
 
 	fileStorage := repository.NewStorageSaver(

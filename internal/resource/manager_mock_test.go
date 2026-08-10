@@ -16,19 +16,19 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockResource is a mock of Resource interface.
+// MockResource is a fake of Resource interface.
 type MockResource struct {
 	ctrl     *gomock.Controller
 	recorder *MockResourceMockRecorder
 	isgomock struct{}
 }
 
-// MockResourceMockRecorder is the mock recorder for MockResource.
+// MockResourceMockRecorder is the fake recorder for MockResource.
 type MockResourceMockRecorder struct {
 	mock *MockResource
 }
 
-// NewMockResource creates a new mock instance.
+// NewMockResource creates a new fake instance.
 func NewMockResource(ctrl *gomock.Controller) *MockResource {
 	mock := &MockResource{ctrl: ctrl}
 	mock.recorder = &MockResourceMockRecorder{mock}

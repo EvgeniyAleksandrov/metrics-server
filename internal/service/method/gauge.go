@@ -32,7 +32,7 @@ func (g *Gauge) Update(ctx context.Context, updateParams params.Update) error {
 }
 
 func (g *Gauge) UpdateBatch(ctx context.Context, updates []params.Update) error {
-	gauges := make([]values.Gauge, len(updates))
+	gauges := make([]values.Gauge, 0, len(updates))
 
 	for _, update := range updates {
 		gauges = append(gauges, values.Gauge{Name: update.ID, Value: *update.Value})

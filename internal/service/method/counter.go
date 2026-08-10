@@ -32,9 +32,8 @@ func (c *Counter) Update(ctx context.Context, updateParams params.Update) error 
 }
 
 func (c *Counter) UpdateBatch(ctx context.Context, updates []params.Update) error {
-	counters := make([]values.Counter, len(updates))
+	counters := make([]values.Counter, 0, len(updates))
 	for _, update := range updates {
-		fmt.Printf("U")
 		counters = append(counters, values.Counter{Name: update.ID, Delta: *update.Delta})
 	}
 
