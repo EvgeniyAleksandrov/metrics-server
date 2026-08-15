@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/hash"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
 
@@ -30,13 +32,15 @@ type Publisher struct {
 	httpClient HTTPClient
 	translator Translator
 	retrier    Retrier
+	key        string
 }
 
-func NewPublisher(httpClient HTTPClient, translator Translator, retrier Retrier) *Publisher {
+func NewPublisher(httpClient HTTPClient, translator Translator, retrier Retrier, key string) *Publisher {
 	return &Publisher{
 		httpClient: httpClient,
 		translator: translator,
 		retrier:    retrier,
+		key:        key,
 	}
 }
 
@@ -102,6 +106,11 @@ func (p *Publisher) buildUpdateRequest(server string, m *Metric) (*http.Request,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "application/gzip")
 	req.Header.Set("Accept-Encoding", "gzip")
+
+	if p.key != "" {
+		hasher := hash.NewSHA256(p.key)
+		req.Header.Set("HashSHA256", hex.EncodeToString(hasher.MakeHash(byteBuffer.Bytes())))
+	}
 
 	return req, nil
 }

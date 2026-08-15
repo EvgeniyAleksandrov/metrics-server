@@ -13,6 +13,7 @@ type Server struct {
 	FilePath      string `env:"FILE_STORAGE_PATH"`
 	Restore       bool   `env:"RESTORE"`
 	DatabaseDSN   string `env:"DATABASE_DSN"`
+	Key           string `env:"KEY"`
 }
 
 func ParseServerConfig() (*Server, error) {
@@ -29,6 +30,7 @@ func ParseServerConfig() (*Server, error) {
 	flag.StringVar(&serverConfig.FilePath, "f", "db.json", "storage file path")
 	flag.BoolVar(&serverConfig.Restore, "r", true, "need to restore data from file")
 	flag.StringVar(&serverConfig.DatabaseDSN, "d", "", "postgress database connection string")
+	flag.StringVar(&serverConfig.Key, "k", "", "key for check hash")
 
 	flag.Parse()
 

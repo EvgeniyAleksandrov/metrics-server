@@ -29,6 +29,10 @@ type Logger interface {
 	Warn(msg string, flags ...zap.Field)
 }
 
+type Hasher interface {
+	MakeHash(msg string) string
+}
+
 type Agent struct {
 	resourceManager ResourceManager
 	metricGetters   []MetricGetter

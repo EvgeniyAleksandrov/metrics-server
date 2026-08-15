@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,7 +20,6 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/checker/publisher"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/policy"
-	"github.com/caarlos0/env"
 	"go.uber.org/zap"
 )
 
@@ -33,16 +31,9 @@ func main() {
 
 	defer logger.Sync()
 
-	agentConfig := config.Agent{}
-
-	flag.StringVar(&agentConfig.Address, "a", "localhost:8080", "Server's address and port.")
-	flag.IntVar(&agentConfig.PoolInterval, "p", 2, "Metric collection interval.")
-	flag.IntVar(&agentConfig.ReportInterval, "r", 10, "Report sending interval.")
-
-	flag.Parse()
-
-	if err := env.Parse(&agentConfig); err != nil {
-		logger.Fatal("Parse config error", zap.Error(err))
+	agentConfig, err := config.ParseAgentConfig()
+	if err != nil {
+		logger.Fatal("Parse agent config error", zap.Error(err))
 	}
 
 	publishRetrier := retry.NewRetry(publisher.NewSendError(), policy.NewExponentialBackOff(3, 2))
@@ -62,6 +53,7 @@ func main() {
 			&http.Client{},
 			translator.NewMetric(translation.NewGauge(), translation.NewCounter()),
 			publishRetrier,
+			agentConfig.Key,
 		),
 		agentConfig.Address,
 		time.Duration(agentConfig.PoolInterval)*time.Second,

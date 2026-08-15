@@ -39,7 +39,7 @@ func TestPublisherUpdate_PublicateGaugeMetric_ReturnNoError(t *testing.T) {
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier, "")
 
 	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestPublisherUpdate_PublicateCounterMetric_ReturnNoError(t *testing.T) {
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier, "")
 
 	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestPublisherUpdate_PublicateOnUnavailableServer_ReturnError(t *testing.T) 
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier, "")
 
 	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.ErrorIs(t, err, ErrTestPublishing)
@@ -116,7 +116,7 @@ func TestPublisherUpdate_PublicateWithNotOKStatus_ReturnError(t *testing.T) {
 		translation.NewCounter(),
 	)
 
-	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier)
+	sut := metric.NewPublisher(mockHTTPClient, metricTranslator, fakeRetrier, "")
 
 	err := sut.Publish(context.Background(), "localhost", testMetric)
 	require.ErrorIs(t, err, metric.ErrNotPublished)
