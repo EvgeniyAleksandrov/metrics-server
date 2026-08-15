@@ -1,15 +1,14 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	models "github.com/EvgeniyAleksandrov/metrics-server/internal/model"
 )
-
-var ErrNotFoundElement = errors.New("not found element")
 
 type MemStorage struct {
 	gauge    map[string]float64
@@ -25,37 +24,51 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (s *MemStorage) SetGauge(name string, value float64) error {
+func (s *MemStorage) SetGauge(_ context.Context, gauge values.Gauge) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.setGauge(name, value)
+	return s.setGauge(gauge)
 }
 
-func (s *MemStorage) setGauge(name string, value float64) error {
-	s.gauge[name] = value
-	return nil
-}
-
-func (s *MemStorage) AddCounter(name string, value int64) error {
+func (s *MemStorage) SetGauges(_ context.Context, gauges []values.Gauge) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.addCounter(name, value)
-}
-
-func (s *MemStorage) addCounter(name string, value int64) error {
-	if _, ok := s.counters[name]; !ok {
-		s.counters[name] = value
-		return nil
+	for _, gauge := range gauges {
+		if err := s.setGauge(gauge); err != nil {
+			return fmt.Errorf("set gauge from batch: %w", err)
+		}
 	}
 
-	s.counters[name] += value
+	return nil
+}
+
+func (s *MemStorage) AddCounter(_ context.Context, counter values.Counter) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.addCounter(counter)
+}
+
+func (s *MemStorage) AddCounters(_ context.Context, counters []values.Counter) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, counter := range counters {
+		if err := s.addCounter(counter); err != nil {
+			return fmt.Errorf("set gauge from batch: %w", err)
+		}
+	}
 
 	return nil
 }
 
-func (s *MemStorage) GetGauge(name string) (float64, error) {
+func (s *MemStorage) Ping(_ context.Context) error {
+	return nil
+}
+
+func (s *MemStorage) GetGauge(_ context.Context, name string) (float64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -66,7 +79,7 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 	return 0, ErrNotFoundElement
 }
 
-func (s *MemStorage) GetCounter(name string) (int64, error) {
+func (s *MemStorage) GetCounter(_ context.Context, name string) (int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -77,14 +90,14 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 	return 0, ErrNotFoundElement
 }
 
-func (s *MemStorage) GetAllGaugeValues() (map[string]float64, error) {
+func (s *MemStorage) GetAllGaugeValues(_ context.Context) (map[string]float64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return s.gauge, nil
 }
 
-func (s *MemStorage) GetAllCounterValues() (map[string]int64, error) {
+func (s *MemStorage) GetAllCounterValues(_ context.Context) (map[string]int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -142,15 +155,33 @@ func (s *MemStorage) Unmarshal(jsonData []byte) error {
 				continue
 			}
 
-			_ = s.setGauge(metric.ID, *metric.Value)
+			_ = s.setGauge(values.Gauge{Name: metric.ID, Value: *metric.Value})
 		case models.Counter:
 			if metric.Delta == nil {
 				continue
 			}
 
-			_ = s.addCounter(metric.ID, *metric.Delta)
+			_ = s.addCounter(values.Counter{Name: metric.ID, Delta: *metric.Delta})
 		}
 	}
+
+	return nil
+}
+
+func (s *MemStorage) Close() {}
+
+func (s *MemStorage) setGauge(gauge values.Gauge) error {
+	s.gauge[gauge.Name] = gauge.Value
+	return nil
+}
+
+func (s *MemStorage) addCounter(counter values.Counter) error {
+	if _, ok := s.counters[counter.Name]; !ok {
+		s.counters[counter.Name] = counter.Delta
+		return nil
+	}
+
+	s.counters[counter.Name] += counter.Delta
 
 	return nil
 }

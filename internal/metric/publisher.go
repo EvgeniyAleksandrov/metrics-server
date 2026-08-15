@@ -4,6 +4,7 @@ package metric
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,19 +22,31 @@ type Translator interface {
 	Translate(m *Metric) (*models.Metrics, error)
 }
 
+type Retrier interface {
+	Do(ctx context.Context, fn func() error) error
+}
+
 type Publisher struct {
 	httpClient HTTPClient
 	translator Translator
+	retrier    Retrier
 }
 
-func NewPublisher(httpClient HTTPClient, translator Translator) *Publisher {
+func NewPublisher(httpClient HTTPClient, translator Translator, retrier Retrier) *Publisher {
 	return &Publisher{
 		httpClient: httpClient,
 		translator: translator,
+		retrier:    retrier,
 	}
 }
 
-func (p *Publisher) Publish(server string, m *Metric) error {
+func (p *Publisher) Publish(ctx context.Context, server string, m *Metric) error {
+	return p.retrier.Do(ctx, func() error {
+		return p.publish(server, m)
+	})
+}
+
+func (p *Publisher) publish(server string, m *Metric) error {
 	req, err := p.buildUpdateRequest(server, m)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)

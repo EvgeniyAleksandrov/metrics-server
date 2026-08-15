@@ -20,7 +20,7 @@ type MetricGetter interface {
 }
 
 type MetricPublisher interface {
-	Publish(server string, m *metric.Metric) error
+	Publish(ctx context.Context, server string, m *metric.Metric) error
 }
 
 type Logger interface {
@@ -110,7 +110,7 @@ func (a *Agent) Run(ctx context.Context) {
 			}
 
 			for _, m := range allMetrics {
-				if err := a.metricPublisher.Publish(a.serverURL, m); err != nil {
+				if err := a.metricPublisher.Publish(ctx, a.serverURL, m); err != nil {
 					a.logger.Warn(
 						"Publish metrics error",
 						zap.String("metricName", string(m.Name())),

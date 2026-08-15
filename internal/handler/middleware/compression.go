@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"go.uber.org/zap"
 )
 
@@ -14,15 +15,11 @@ const (
 	ContentTypeApplicationJSON = "application/json"
 )
 
-type CompressionLogger interface {
-	Warn(msg string, fields ...zap.Field)
-}
-
 type Compression struct {
-	logger CompressionLogger
+	logger interfaces.Logger
 }
 
-func NewCompression(logger CompressionLogger) *Compression {
+func NewCompression(logger interfaces.Logger) *Compression {
 	return &Compression{
 		logger: logger,
 	}

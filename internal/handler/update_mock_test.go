@@ -10,6 +10,7 @@
 package handler_test
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
@@ -17,19 +18,19 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockUpdateMetricProcessor is a mock of UpdateMetricProcessor interface.
+// MockUpdateMetricProcessor is a fake of UpdateMetricProcessor interface.
 type MockUpdateMetricProcessor struct {
 	ctrl     *gomock.Controller
 	recorder *MockUpdateMetricProcessorMockRecorder
 	isgomock struct{}
 }
 
-// MockUpdateMetricProcessorMockRecorder is the mock recorder for MockUpdateMetricProcessor.
+// MockUpdateMetricProcessorMockRecorder is the fake recorder for MockUpdateMetricProcessor.
 type MockUpdateMetricProcessorMockRecorder struct {
 	mock *MockUpdateMetricProcessor
 }
 
-// NewMockUpdateMetricProcessor creates a new mock instance.
+// NewMockUpdateMetricProcessor creates a new fake instance.
 func NewMockUpdateMetricProcessor(ctrl *gomock.Controller) *MockUpdateMetricProcessor {
 	mock := &MockUpdateMetricProcessor{ctrl: ctrl}
 	mock.recorder = &MockUpdateMetricProcessorMockRecorder{mock}
@@ -42,32 +43,32 @@ func (m *MockUpdateMetricProcessor) EXPECT() *MockUpdateMetricProcessorMockRecor
 }
 
 // Update mocks base method.
-func (m *MockUpdateMetricProcessor) Update(updateParams params.Update) error {
+func (m *MockUpdateMetricProcessor) Update(ctx context.Context, updateParams params.Update) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", updateParams)
+	ret := m.ctrl.Call(m, "Update", ctx, updateParams)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUpdateMetricProcessorMockRecorder) Update(updateParams any) *gomock.Call {
+func (mr *MockUpdateMetricProcessorMockRecorder) Update(ctx, updateParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), updateParams)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdateMetricProcessor)(nil).Update), ctx, updateParams)
 }
 
-// MockUpdateParamsParser is a mock of UpdateParamsParser interface.
+// MockUpdateParamsParser is a fake of UpdateParamsParser interface.
 type MockUpdateParamsParser struct {
 	ctrl     *gomock.Controller
 	recorder *MockUpdateParamsParserMockRecorder
 	isgomock struct{}
 }
 
-// MockUpdateParamsParserMockRecorder is the mock recorder for MockUpdateParamsParser.
+// MockUpdateParamsParserMockRecorder is the fake recorder for MockUpdateParamsParser.
 type MockUpdateParamsParserMockRecorder struct {
 	mock *MockUpdateParamsParser
 }
 
-// NewMockUpdateParamsParser creates a new mock instance.
+// NewMockUpdateParamsParser creates a new fake instance.
 func NewMockUpdateParamsParser(ctrl *gomock.Controller) *MockUpdateParamsParser {
 	mock := &MockUpdateParamsParser{ctrl: ctrl}
 	mock.recorder = &MockUpdateParamsParserMockRecorder{mock}
@@ -94,19 +95,19 @@ func (mr *MockUpdateParamsParserMockRecorder) Parse(req any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockUpdateParamsParser)(nil).Parse), req)
 }
 
-// MockUpdateResponseWriter is a mock of UpdateResponseWriter interface.
+// MockUpdateResponseWriter is a fake of UpdateResponseWriter interface.
 type MockUpdateResponseWriter struct {
 	ctrl     *gomock.Controller
 	recorder *MockUpdateResponseWriterMockRecorder
 	isgomock struct{}
 }
 
-// MockUpdateResponseWriterMockRecorder is the mock recorder for MockUpdateResponseWriter.
+// MockUpdateResponseWriterMockRecorder is the fake recorder for MockUpdateResponseWriter.
 type MockUpdateResponseWriterMockRecorder struct {
 	mock *MockUpdateResponseWriter
 }
 
-// NewMockUpdateResponseWriter creates a new mock instance.
+// NewMockUpdateResponseWriter creates a new fake instance.
 func NewMockUpdateResponseWriter(ctrl *gomock.Controller) *MockUpdateResponseWriter {
 	mock := &MockUpdateResponseWriter{ctrl: ctrl}
 	mock.recorder = &MockUpdateResponseWriterMockRecorder{mock}

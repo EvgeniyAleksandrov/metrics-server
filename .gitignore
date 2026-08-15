@@ -25,5 +25,8 @@ vendor/
 .idea
 .vscode
 
-
+# File storage
 db.json
+
+#coverage
+coverage.out

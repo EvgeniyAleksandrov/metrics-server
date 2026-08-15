@@ -4,12 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/interfaces"
 	"go.uber.org/zap"
 )
-
-type Logger interface {
-	Info(msg string, fields ...zap.Field)
-}
 
 type loggingResponseWriter struct {
 	http.ResponseWriter
@@ -38,10 +35,10 @@ func (w *loggingResponseWriter) GetStatus() int {
 }
 
 type Logging struct {
-	logger Logger
+	logger interfaces.Logger
 }
 
-func NewLogging(logger Logger) *Logging {
+func NewLogging(logger interfaces.Logger) *Logging {
 	return &Logging{
 		logger: logger,
 	}

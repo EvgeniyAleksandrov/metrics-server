@@ -17,19 +17,19 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockMethod is a mock of Method interface.
+// MockMethod is a fake of Method interface.
 type MockMethod struct {
 	ctrl     *gomock.Controller
 	recorder *MockMethodMockRecorder
 	isgomock struct{}
 }
 
-// MockMethodMockRecorder is the mock recorder for MockMethod.
+// MockMethodMockRecorder is the fake recorder for MockMethod.
 type MockMethodMockRecorder struct {
 	mock *MockMethod
 }
 
-// NewMockMethod creates a new mock instance.
+// NewMockMethod creates a new fake instance.
 func NewMockMethod(ctrl *gomock.Controller) *MockMethod {
 	mock := &MockMethod{ctrl: ctrl}
 	mock.recorder = &MockMethodMockRecorder{mock}

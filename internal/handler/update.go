@@ -2,14 +2,16 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/handler/request/params"
 )
 
 type UpdateMetricProcessor interface {
-	Update(updateParams params.Update) error
+	Update(ctx context.Context, updateParams params.Update) error
 }
 
 type UpdateParamsParser interface {
@@ -60,7 +62,10 @@ func (u *Update) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := u.metricProcessor.Update(*updateParams); err != nil {
+	updateContext, cancel := context.WithTimeout(req.Context(), time.Duration(5)*time.Second)
+	defer cancel()
+
+	if err := u.metricProcessor.Update(updateContext, *updateParams); err != nil {
 		u.responseWriter.WriteError(resp, "Processing request failed", http.StatusInternalServerError)
 		return
 	}

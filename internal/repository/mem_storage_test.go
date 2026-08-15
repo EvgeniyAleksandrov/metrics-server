@@ -1,100 +1,114 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/repository/values"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/repository"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestMemStorage_CounterAddAnyElementsWithOneName_GetThisElementsAsSlice(t *testing.T) {
-	sut := repository.NewMemStorage()
+type MemStorageSuite struct {
+	suite.Suite
 
-	err := sut.AddCounter("A", 1)
-	require.NoError(t, err)
-
-	err = sut.AddCounter("A", 2)
-	require.NoError(t, err)
-
-	err = sut.AddCounter("A", 3)
-	require.NoError(t, err)
-
-	values, err := sut.GetCounter("A")
-	require.NoError(t, err)
-	require.Equal(t, int64(6), values)
+	ctx context.Context
 }
 
-func TestMemStorage_CounterAddAnyElementsWithIdenticalName_GetAllCountersByName(t *testing.T) {
-	sut := repository.NewMemStorage()
+func TestMemStorageSuite(t *testing.T) {
+	t.Parallel()
 
-	err := sut.AddCounter("A", 1)
-	require.NoError(t, err)
-
-	err = sut.AddCounter("A", 2)
-	require.NoError(t, err)
-
-	err = sut.AddCounter("B", 3)
-	require.NoError(t, err)
-
-	values, err := sut.GetCounter("A")
-	require.NoError(t, err)
-	require.Equal(t, int64(3), values)
-
-	values, err = sut.GetCounter("B")
-	require.NoError(t, err)
-	require.Equal(t, int64(3), values)
+	suite.Run(t, &MemStorageSuite{ctx: context.Background()})
 }
 
-func TestMemStorage_CounterGetUnavailableElement_ElementNotFoundError(t *testing.T) {
+func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithOneName_GetThisElementsAsSlice() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter("A", 1)
-	require.NoError(t, err)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
+	s.Require().NoError(err)
 
-	err = sut.AddCounter("A", 2)
-	require.NoError(t, err)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
+	s.Require().NoError(err)
 
-	values, err := sut.GetCounter("B")
-	require.ErrorIs(t, err, repository.ErrNotFoundElement)
-	require.Empty(t, values)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 3})
+	s.Require().NoError(err)
+
+	values, err := sut.GetCounter(s.ctx, "A")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(6), values)
 }
 
-func TestMemStorage_GaugeAddAnyElementsWithOneName_ElementWasUpdated(t *testing.T) {
+func (s *MemStorageSuite) TestMemStorage_CounterAddAnyElementsWithIdenticalName_GetAllCountersByName() {
 	sut := repository.NewMemStorage()
 
-	err := sut.SetGauge("A", 1.2)
-	require.NoError(t, err)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
+	s.Require().NoError(err)
 
-	value, err := sut.GetGauge("A")
-	require.NoError(t, err)
-	require.Equal(t, 1.2, value)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
+	s.Require().NoError(err)
 
-	err = sut.SetGauge("A", 1.5)
-	require.NoError(t, err)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "B", Delta: 3})
+	s.Require().NoError(err)
 
-	value, err = sut.GetGauge("A")
-	require.NoError(t, err)
-	require.Equal(t, 1.5, value)
+	values, err := sut.GetCounter(s.ctx, "A")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(3), values)
+
+	values, err = sut.GetCounter(s.ctx, "B")
+	s.Require().NoError(err)
+	s.Require().Equal(int64(3), values)
 }
 
-func TestMemStorage_AddGaugeElementGetCounterElementWithSameName_ElementWasNotFound(t *testing.T) {
+func (s *MemStorageSuite) TestMemStorage_CounterGetUnavailableElement_ElementNotFoundError() {
 	sut := repository.NewMemStorage()
 
-	err := sut.SetGauge("A", 1.2)
-	require.NoError(t, err)
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
+	s.Require().NoError(err)
 
-	value, err := sut.GetCounter("A")
-	require.ErrorIs(t, err, repository.ErrNotFoundElement)
-	require.Empty(t, value)
+	err = sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 2})
+	s.Require().NoError(err)
+
+	values, err := sut.GetCounter(s.ctx, "B")
+	s.Require().ErrorIs(err, repository.ErrNotFoundElement)
+	s.Require().Empty(values)
 }
 
-func TestMemStorage_AddCounterElementGetGaugeElementWithSameName_ElementWasNotFound(t *testing.T) {
+func (s *MemStorageSuite) TestMemStorage_GaugeAddAnyElementsWithOneName_ElementWasUpdated() {
 	sut := repository.NewMemStorage()
 
-	err := sut.AddCounter("A", 1)
-	require.NoError(t, err)
+	err := sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.2})
+	s.Require().NoError(err)
 
-	value, err := sut.GetGauge("A")
-	require.ErrorIs(t, err, repository.ErrNotFoundElement)
-	require.Empty(t, value)
+	value, err := sut.GetGauge(s.ctx, "A")
+	s.Require().NoError(err)
+	s.Require().Equal(1.2, value)
+
+	err = sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.5})
+	s.Require().NoError(err)
+
+	value, err = sut.GetGauge(s.ctx, "A")
+	s.Require().NoError(err)
+	s.Require().Equal(1.5, value)
+}
+
+func (s *MemStorageSuite) TestMemStorage_AddGaugeElementGetCounterElementWithSameName_ElementWasNotFound() {
+	sut := repository.NewMemStorage()
+
+	err := sut.SetGauge(s.ctx, values.Gauge{Name: "A", Value: 1.2})
+	s.Require().NoError(err)
+
+	value, err := sut.GetCounter(s.ctx, "A")
+	s.Require().ErrorIs(err, repository.ErrNotFoundElement)
+	s.Require().Empty(value)
+}
+
+func (s *MemStorageSuite) TestMemStorage_AddCounterElementGetGaugeElementWithSameName_ElementWasNotFound() {
+	sut := repository.NewMemStorage()
+
+	err := sut.AddCounter(s.ctx, values.Counter{Name: "A", Delta: 1})
+	s.Require().NoError(err)
+
+	value, err := sut.GetGauge(s.ctx, "A")
+	s.Require().ErrorIs(err, repository.ErrNotFoundElement)
+	s.Require().Empty(value)
 }

@@ -18,6 +18,9 @@ import (
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric/translator/translation"
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/resource"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/checker/publisher"
+	"github.com/EvgeniyAleksandrov/metrics-server/internal/retry/policy"
 	"github.com/caarlos0/env"
 	"go.uber.org/zap"
 )
@@ -25,7 +28,7 @@ import (
 func main() {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		panic(fmt.Sprintf("Can't create logger: %s", err.Error()))
+		panic(fmt.Sprintf("Can't create interfaces: %s", err.Error()))
 	}
 
 	defer logger.Sync()
@@ -42,6 +45,8 @@ func main() {
 		logger.Fatal("Parse config error", zap.Error(err))
 	}
 
+	publishRetrier := retry.NewRetry(publisher.NewSendError(), policy.NewExponentialBackOff(3, 2))
+
 	a := agent.NewAgent(
 		resource.NewManager(
 			resource.NewMemory(),
@@ -53,7 +58,11 @@ func main() {
 			getter.NewPullCounter(),
 			getter.NewMemory(),
 		},
-		metric.NewPublisher(&http.Client{}, translator.NewMetric(translation.NewGauge(), translation.NewCounter())),
+		metric.NewPublisher(
+			&http.Client{},
+			translator.NewMetric(translation.NewGauge(), translation.NewCounter()),
+			publishRetrier,
+		),
 		agentConfig.Address,
 		time.Duration(agentConfig.PoolInterval)*time.Second,
 		time.Duration(agentConfig.ReportInterval)*time.Second,

@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -21,17 +22,19 @@ import (
 
 const testMaxBytes = 8 * 1024
 
-type SuitUpdate struct {
+type UpdateSuite struct {
 	suite.Suite
+
+	ctx context.Context
 }
 
 func TestSuitUpdate(t *testing.T) {
 	t.Parallel()
 
-	suite.Run(t, &SuitUpdate{})
+	suite.Run(t, &UpdateSuite{ctx: context.Background()})
 }
 
-func (s *SuitUpdate) TestUpdatePathValue_CorrectGaugeRequest_WriteOKStatus() {
+func (s *UpdateSuite) TestUpdatePathValue_CorrectGaugeRequest_WriteOKStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -47,12 +50,12 @@ func (s *SuitUpdate) TestUpdatePathValue_CorrectGaugeRequest_WriteOKStatus() {
 	s.Require().Equal(rec.Code, http.StatusOK)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 
-	value, err := memStorage.GetGauge("Param1")
+	value, err := memStorage.GetGauge(s.ctx, "Param1")
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), value, 12.22)
 }
 
-func (s *SuitUpdate) TestUpdatePathValue_CorrectCounterRequest_WriteOKStatus() {
+func (s *UpdateSuite) TestUpdatePathValue_CorrectCounterRequest_WriteOKStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -68,12 +71,12 @@ func (s *SuitUpdate) TestUpdatePathValue_CorrectCounterRequest_WriteOKStatus() {
 	s.Require().Equal(rec.Code, http.StatusOK)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 
-	value, err := memStorage.GetCounter("Param1")
+	value, err := memStorage.GetCounter(s.ctx, "Param1")
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), value, int64(25))
 }
 
-func (s *SuitUpdate) TestUpdatePathValue_RequestWithUnsupportedMethod_WriteErrorStatus() {
+func (s *UpdateSuite) TestUpdatePathValue_RequestWithUnsupportedMethod_WriteErrorStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -89,16 +92,16 @@ func (s *SuitUpdate) TestUpdatePathValue_RequestWithUnsupportedMethod_WriteError
 	s.Require().Equal(rec.Code, http.StatusBadRequest)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 
-	gaugeValues, err := memStorage.GetAllGaugeValues()
+	gaugeValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(gaugeValues)
 
-	counterValues, err := memStorage.GetAllGaugeValues()
+	counterValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(counterValues)
 }
 
-func (s *SuitUpdate) TestUpdatePathValue_InvalidValueFormat_WriteErrorStatus() {
+func (s *UpdateSuite) TestUpdatePathValue_InvalidValueFormat_WriteErrorStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -114,16 +117,16 @@ func (s *SuitUpdate) TestUpdatePathValue_InvalidValueFormat_WriteErrorStatus() {
 	s.Require().Equal(rec.Code, http.StatusBadRequest)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 
-	gaugeValues, err := memStorage.GetAllGaugeValues()
+	gaugeValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(gaugeValues)
 
-	counterValues, err := memStorage.GetAllGaugeValues()
+	counterValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(counterValues)
 }
 
-func (s *SuitUpdate) TestUpdatePathValue_RequestWithoutValue_WriteNotFoundErrorStatus() {
+func (s *UpdateSuite) TestUpdatePathValue_RequestWithoutValue_WriteNotFoundErrorStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -139,16 +142,16 @@ func (s *SuitUpdate) TestUpdatePathValue_RequestWithoutValue_WriteNotFoundErrorS
 	s.Require().Equal(rec.Code, http.StatusNotFound)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 
-	gaugeValues, err := memStorage.GetAllGaugeValues()
+	gaugeValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(gaugeValues)
 
-	counterValues, err := memStorage.GetAllGaugeValues()
+	counterValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(counterValues)
 }
 
-func (s *SuitUpdate) TestUpdateJSONValue_CorrectGaugeRequest_WriteOKStatus() {
+func (s *UpdateSuite) TestUpdateJSONValue_CorrectGaugeRequest_WriteOKStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -169,12 +172,12 @@ func (s *SuitUpdate) TestUpdateJSONValue_CorrectGaugeRequest_WriteOKStatus() {
 	s.Require().Equal(rec.Code, http.StatusOK)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "application/json; charset=utf-8")
 
-	value, err := memStorage.GetGauge("ParamJSON1")
+	value, err := memStorage.GetGauge(s.ctx, "ParamJSON1")
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), value, 14.44)
 }
 
-func (s *SuitUpdate) TestUpdateJSONValue_CorrectCounterRequest_WriteOKStatus() {
+func (s *UpdateSuite) TestUpdateJSONValue_CorrectCounterRequest_WriteOKStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -195,12 +198,12 @@ func (s *SuitUpdate) TestUpdateJSONValue_CorrectCounterRequest_WriteOKStatus() {
 	s.Require().Equal(rec.Code, http.StatusOK)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "application/json; charset=utf-8")
 
-	value, err := memStorage.GetCounter("ParamJSON1")
+	value, err := memStorage.GetCounter(s.ctx, "ParamJSON1")
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), value, int64(44))
 }
 
-func (s *SuitUpdate) TestUpdateJSONValue_InvalidRequest_WriteOKStatus() {
+func (s *UpdateSuite) TestUpdateJSONValue_InvalidRequest_WriteOKStatus() {
 	logger := zap.NewNop()
 	memStorage := repository.NewMemStorage()
 
@@ -221,18 +224,18 @@ func (s *SuitUpdate) TestUpdateJSONValue_InvalidRequest_WriteOKStatus() {
 	s.Require().Equal(rec.Code, http.StatusNotFound)
 	s.Require().Equal(rec.Header().Get("Content-Type"), "application/json; charset=utf-8")
 
-	gaugeValues, err := memStorage.GetAllGaugeValues()
+	gaugeValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(gaugeValues)
 
-	counterValues, err := memStorage.GetAllGaugeValues()
+	counterValues, err := memStorage.GetAllGaugeValues(s.ctx)
 	s.Require().NoError(err)
 	s.Require().Empty(counterValues)
 }
 
 // HELPERS
 
-func (s *SuitUpdate) buildRequestWithPathParams(name, method, value string) *http.Request {
+func (s *UpdateSuite) buildRequestWithPathParams(name, method, value string) *http.Request {
 	req, err := http.NewRequest(http.MethodPost, "", nil)
 	s.Require().NoError(err)
 
@@ -243,8 +246,8 @@ func (s *SuitUpdate) buildRequestWithPathParams(name, method, value string) *htt
 	return req
 }
 
-func (s *SuitUpdate) buildRequestWithOutValue(name, method string) *http.Request {
-	req, err := http.NewRequest(http.MethodPost, "", nil)
+func (s *UpdateSuite) buildRequestWithOutValue(name, method string) *http.Request {
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, "", nil)
 	s.Require().NoError(err)
 
 	req.SetPathValue("name", name)
@@ -253,11 +256,11 @@ func (s *SuitUpdate) buildRequestWithOutValue(name, method string) *http.Request
 	return req
 }
 
-func (s *SuitUpdate) buildRequestWithJson(metric models.Metrics) *http.Request {
+func (s *UpdateSuite) buildRequestWithJson(metric models.Metrics) *http.Request {
 	data, err := json.Marshal(metric)
 	s.Require().NoError(err)
 
-	req, err := http.NewRequest(http.MethodPost, "", bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, "", bytes.NewBuffer(data))
 	s.Require().NoError(err)
 
 	return req
