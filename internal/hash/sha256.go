@@ -3,23 +3,24 @@ package hash
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"hash"
 )
 
 type SHA256 struct {
-	hasher hash.Hash
+	key []byte
 }
 
 func NewSHA256(key string) *SHA256 {
 	if key == "" {
-		panic("Set empty key for sha256 haser")
+		panic("Set empty key for sha256 hasher")
 	}
 
 	return &SHA256{
-		hasher: hmac.New(sha256.New, []byte(key)),
+		key: []byte(key),
 	}
 }
 
 func (s *SHA256) MakeHash(data []byte) []byte {
-	return s.hasher.Sum(data)
+	hasher := hmac.New(sha256.New, s.key)
+	hasher.Write(data)
+	return hasher.Sum(nil)
 }

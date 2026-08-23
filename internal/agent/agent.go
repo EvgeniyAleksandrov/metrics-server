@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/EvgeniyAleksandrov/metrics-server/internal/metric"
@@ -42,6 +43,7 @@ type Agent struct {
 
 	pullInterval   time.Duration
 	reportInterval time.Duration
+	numOfWorkers   int
 
 	logger Logger
 }
@@ -53,6 +55,7 @@ func NewAgent(
 	serverURL string,
 	pullInterval time.Duration,
 	reportInterval time.Duration,
+	numOfWorkers int,
 	logger Logger,
 ) *Agent {
 	for _, mGetter := range metricGetters {
@@ -75,11 +78,56 @@ func NewAgent(
 		serverURL:       serverURL,
 		pullInterval:    pullInterval,
 		reportInterval:  reportInterval,
+		numOfWorkers:    numOfWorkers,
 		logger:          logger,
 	}
 }
 
 func (a *Agent) Run(ctx context.Context) {
+	metricsQueue := make(chan metric.Metric)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		a.runCollectorJob(ctx, metricsQueue)
+	}()
+
+	for i := 0; i < a.numOfWorkers; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			a.runPublisherJob(ctx, metricsQueue, i+1)
+		}()
+	}
+
+	wg.Wait()
+
+	a.logger.Info("Agent finished")
+}
+
+func (a *Agent) runPublisherJob(ctx context.Context, metricsQueue <-chan metric.Metric, workerNum int) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case m := <-metricsQueue:
+			if err := a.metricPublisher.Publish(ctx, a.serverURL, &m); err != nil {
+				a.logger.Warn(
+					"Publish metrics error",
+					zap.String("metricName", string(m.Name())),
+					zap.Int("numOfWorker", workerNum),
+					zap.Error(err),
+				)
+			}
+		}
+	}
+}
+
+func (a *Agent) runCollectorJob(ctx context.Context, metricsQueue chan<- metric.Metric) {
 	pullTicker := time.NewTicker(a.pullInterval)
 	defer pullTicker.Stop()
 
@@ -114,12 +162,12 @@ func (a *Agent) Run(ctx context.Context) {
 			}
 
 			for _, m := range allMetrics {
-				if err := a.metricPublisher.Publish(ctx, a.serverURL, m); err != nil {
-					a.logger.Warn(
-						"Publish metrics error",
-						zap.String("metricName", string(m.Name())),
-						zap.Error(err),
-					)
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					metricsQueue <- *m
+
 				}
 			}
 		}

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -43,11 +42,13 @@ func main() {
 			resource.NewMemory(),
 			resource.NewPollCounter(),
 			resource.NewRandom(),
+			resource.NewSystem(),
 		),
 		[]agent.MetricGetter{
 			getter.NewRandom(),
 			getter.NewPullCounter(),
 			getter.NewMemory(),
+			getter.NewSystem(),
 		},
 		metric.NewPublisher(
 			&http.Client{},
@@ -58,14 +59,12 @@ func main() {
 		agentConfig.Address,
 		time.Duration(agentConfig.PoolInterval)*time.Second,
 		time.Duration(agentConfig.ReportInterval)*time.Second,
+		agentConfig.RateLimit,
 		logger,
 	)
 
 	stopContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGKILL)
 	defer stop()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	logger.Info(
 		"Agent started",
@@ -74,12 +73,5 @@ func main() {
 		zap.Int("reportInterval", agentConfig.ReportInterval),
 	)
 
-	go func() {
-		a.Run(stopContext)
-		wg.Done()
-	}()
-
-	wg.Wait()
-
-	logger.Info("Agent finished")
+	a.Run(stopContext)
 }

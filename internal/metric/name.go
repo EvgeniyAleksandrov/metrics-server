@@ -35,6 +35,11 @@ const (
 
 	// Rangom
 	RandomValue Name = "RandomValue"
+
+	//System stats
+	TotalMemory     Name = "TotalMemory"
+	FreeMemory      Name = "FreeMemory"
+	CPUutilization1 Name = "CPUutilization1"
 )
 
 // Counter
