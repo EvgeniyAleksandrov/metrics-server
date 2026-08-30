@@ -79,8 +79,11 @@ func run(ctx context.Context, serverConfig *config.Server, logger *zap.Logger) e
 	router := chi.NewRouter()
 
 	// middlewares
-	router.Use(middleware.NewCompression(logger).Do, middleware.NewLogging(logger).Do)
-
+	if serverConfig.Key != "" {
+		router.Use(middleware.NewHashing(logger, serverConfig.Key).Do)
+	}
+	router.Use(middleware.NewCompression(logger).Do)
+	router.Use(middleware.NewLogging(logger).Do)
 	// handlers
 	router.Get("/", handler.NewRoot(processor).ServeHTTP)
 	router.Get("/ping", handler.NewPing(storage, logger).ServeHTTP)
